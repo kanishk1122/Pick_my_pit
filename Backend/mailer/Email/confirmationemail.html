@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Confirmation</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #f0f8ff; margin: 0; padding: 0;">
+    <div style="max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff; border: 1px solid #ddd; border-radius: 10px; text-align: center;">
+        <!-- Email Header -->
+        <div style="background-color: #ffffff; padding: 10px; border-bottom: 2px solid #ffa500; text-align: center;">
+            <img src="https://i.ibb.co/tqqPyzB/Screenshot-from-2024-09-24-12-26-48-removebg-preview.png" alt="Pick my pet" style="width: 50px; margin-bottom: 10px;">
+            <h1 style="font-size: 24px; color: #333; margin: 0;">Pick my pet</h1>
+        </div>
+
+        <!-- Email Content -->
+        <div style="padding: 20px; text-align: left;">
+            <p style="font-size: 16px; color: #333; margin: 10px 0;">Hi <strong>{{userName}}</strong>,</p>
+            <p style="font-size: 16px; color: #333; margin: 10px 0;">
+                Thank you for signing up! Please confirm your email address by clicking the button below.
+            </p>
+            <div style="text-align: center; margin: 20px 0;">
+                <a href="{{ confirmationLink}}" style="background-color: #ffa500; color: #000; text-decoration: none; padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 5px; border: 1px solid #000; display: inline-block;">Confirm Email</a>
+            </div>
+            <p style="font-size: 14px; color: #555; margin: 10px 0;">
+                If you didn’t sign up, please ignore this email.
+            </p>
+        </div>
+
+        <!-- Email Footer -->
+        <div style="text-align: center; padding: 10px 0; border-top: 1px solid #ddd;">
+            <p style="font-size: 14px; color: #555; margin: 5px 0;">
+                If you have any issues, feel free to contact our support team at 
+                <a href="mailto:pickmypit@gmail.com" style="color: #ffa500; text-decoration: none;">pickmypit@gmail.com</a>.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

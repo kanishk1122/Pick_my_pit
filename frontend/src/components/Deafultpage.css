@@ -1,0 +1,11 @@
+.main {
+    font-family: 'Inria Sans', sans-serif;
+    width: 100vw;
+    overflow-x: hidden;
+    background: linear-gradient(to right, 
+        rgba(200, 220, 230, 1), /* Light Blue */
+        rgba(180, 190, 220, 1), /* Light Purple */
+        rgba(240, 200, 210, 1)  /* Light Pink */
+    );
+    min-height: 100vh;
+}

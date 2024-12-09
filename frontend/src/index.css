@@ -1,0 +1,39 @@
+@import url("https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: "Nunito", sans-serif; /* Using 'Nunito' as the default font */
+  width: 100vw;
+  overflow-x: hidden;
+  background: #b3dfee;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #b3dfee;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #fff;
+  border-radius: 100px 0px 0px 100px;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* In your global CSS file */
+.brand-button {
+  @apply transition-shadow duration-300 border-2 border-black hover:shadow-customHover py-2 text-xl font-semibold bg-white rounded-lg cursor-pointer;
+}

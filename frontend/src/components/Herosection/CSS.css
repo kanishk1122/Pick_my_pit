@@ -1,0 +1,10 @@
+.mask1 {
+    -webkit-mask-image: url(../../assets/images/mask.png);
+    mask-image: url(../../assets/images/mask.png); /* Ensure the image path is correct */
+    mask-repeat: no-repeat;    
+    /* rotate: -90deg; */
+    margin-left: -50vw;
+    /* background: url(../../assets/images/img1.webp); */
+    /* transform: rotateY(3.142rad); */
+    /* background-size: cover;  */
+}

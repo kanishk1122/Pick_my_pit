@@ -1,0 +1,45 @@
+/* Make sure the parent is relative so the child can be animated */
+.twodivtranstation {
+    /* display: flex; */
+    justify-content: space-between;
+    align-items: center;
+    position: relative;  /* Make it relative to apply absolute positioning */
+    transition: opacity 0.5s ease-out; /* Smooth opacity transition */
+  }
+  
+  /* When transitioning in, apply slideIn animation */
+  .twodivtranstation.transition-start {
+    opacity: 1; /* Make it visible */
+    animation: slideIn 1s forwards; /* Apply slideIn animation */
+  }
+  
+  /* When transitioning out, apply slideOut animation */
+  .twodivtranstation.transition-exit {
+    animation: slideOut 1s forwards; /* Apply slideOut animation */
+    height: 0; /* Collapse the element */
+    opacity: 0; /* Fade out */
+  }
+  
+  /* When not active, the element should be hidden */
+  .twodivtranstation.hidden {
+    display: none;
+  }
+  
+  @keyframes slideIn {
+    from {
+      transform: translateX(100%); /* Start off-screen to the right */
+    }
+    to {
+      transform: translateX(0); /* Slide to its normal position */
+    }
+  }
+  
+  @keyframes slideOut {
+    from {
+      transform: translateX(0); /* Start at its normal position */
+    }
+    to {
+      transform: translateX(-100%); /* Slide out to the left */
+    }
+  }
+  

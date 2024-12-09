@@ -1,0 +1,76 @@
+.swal-container {
+  background-color: white;
+  backdrop-filter: blur(10px); /* Assuming bg-opacity-50 is 50% */
+  border: 2px solid black; /* Border styling */
+  z-index: 9999; /* Z-index */
+}
+
+.swal-title {
+  color: black;
+  font-weight: 600; /* Assuming font-semibold is 600 */
+}
+
+.swal-content {
+  color: black;
+  border: 2px solid black; /* Border styling */
+  font-weight: 600; /* Assuming font-semibold is 600 */
+}
+
+.swal-button {
+  background-color: #0fb65d; /* Green background (similar to bg-green-500) */
+  color: white; /* Text color */
+  font-weight: 600; /* Font weight similar to font-semibold */
+  padding: 0.5rem 1rem; /* Padding for top/bottom and left/right */
+  border-radius: 0.5rem; /* Rounded corners */
+  transition: box-shadow 0.3s; /* Smooth shadow transition */
+  border: 2px solid black; /* Border styling */
+  font-size: 1.25rem; /* Font size similar to text-xl */
+  cursor: pointer; /* Pointer cursor on hover */
+}
+
+.swal-button:hover {
+  @apply transition-shadow duration-300  hover:shadow-customHover py-2 text-xl font-semibold bg-white rounded-lg cursor-pointer;
+}
+
+.swal-button:hover {
+  background-color: #0fb65d; /* Assuming hover:bg-green-600 */
+}
+
+.swal-cancelbutton {
+  --tw-bg-opacity: 1;
+  background-color: rgb(252 165 165 / var(--tw-bg-opacity)) /* #fca5a5 */;
+  color: white; /* Text color */
+  font-weight: 600; /* Font weight similar to font-semibold */
+  padding: 0.5rem 1rem; /* Padding for top/bottom and left/right */
+  border-radius: 0.5rem; /* Rounded corners */
+  transition: box-shadow 0.3s; /* Smooth shadow transition */
+  border: 2px solid black; /* Border styling */
+  font-size: 1.25rem; /* Font size similar to text-xl */
+  margin-left: 20px;
+
+  cursor: pointer; /* Pointer cursor on hover */
+}
+
+.swal-button:hover {
+  @apply transition-shadow duration-300  hover:shadow-customHover py-2 text-xl font-semibold bg-white rounded-lg cursor-pointer;
+}
+.swal-cancelbutton:hover {
+  @apply transition-shadow duration-300  hover:shadow-customHover py-2 text-xl font-semibold bg-white rounded-lg cursor-pointer;
+}
+
+.swal-cancelbutton:hover {
+  --tw-bg-opacity: 1;
+  background-color: rgb(252 165 165 / var(--tw-bg-opacity)) /* #fca5a5 */;
+}
+.swal-button:hover {
+  background-color: #0fb65d; /* Assuming hover:bg-green-600 */
+}
+
+.swal-popup {
+  background-color: #fff; /*  white background */
+  color: #000; /* Black text */
+  padding: 20px; /* Padding inside the popup */
+  border: 2px solid black; /* Border styling */
+  min-height: 400px;
+  border-radius: 20px; /* Rounded corners */
+}
