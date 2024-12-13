@@ -7,6 +7,9 @@ const cors = require('cors');
 const CookieParser = require('cookie-parser');
 const mailer = require('./mailer/mailer');
 
+//limit for image and data uplodation
+app.use(express.json({limit: '2mb'}));
+app.use(express.urlencoded({limit: '2mb', extended: false}));
 
 
 // server.js or app.js
