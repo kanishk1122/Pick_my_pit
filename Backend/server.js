@@ -21,7 +21,6 @@ const port = process.env.PORT || 3000;
 
 // Middleware to parse JSON
 app.use(express.json());
-console.log(process.env);  
 // app.use(morgan("Tokens"));
 app.use(cors());
 app.use(CookieParser());

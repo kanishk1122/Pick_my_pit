@@ -7,6 +7,7 @@ const { sendConfimationEmail , wellcomeEmail } = require("../mailer/mailer");
 const CryptoJS = require("crypto-js");
 require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
+const {signup_auth} = require('../helper/validation_schema.js')
 const axios = require("axios");
 
 // Route to get all users
@@ -40,11 +41,6 @@ router.post("/login", async (req, res) => {
     }
 
     console.log(`Email: ${email} | Login attempt`);
-    const isMatch = await bcrypt.compare(
-      "TestPassword456!",
-      "$2b$10$QKme3WbEnE7uoOcipvq1juhWucOx5padzJVHWT61Gl6Ve9yJnES7K"
-    );
-    console.log("Password Match:", isMatch);
 
     const decryptedPassword = CryptoJS.AES.decrypt(
       password,
@@ -106,8 +102,19 @@ function encrypter(data) {
 }
 
 router.post("/", async (req, res) => {
-  const { firstname, lastname, email, password, gender, userpic } = req.body;
+
+  
   try {
+    
+    try {
+      await signup_auth.validateAsync(req.body);
+    } catch(validtionError){
+      return res.status(400).json({msg : validtionError.details[0].message })
+    }
+
+    const { firstname, lastname, email, password, gender ,role } = req.body;
+
+
     let user = await User.findOne({ email });
 
     if (user) {
@@ -120,7 +127,7 @@ router.post("/", async (req, res) => {
       email,
       password,
       gender,
-      userpic,
+      role,
     });
 
     // proccing data before saving
@@ -135,11 +142,12 @@ router.post("/", async (req, res) => {
     user.emailConfirmToken = token;
     user.emailConfirmExpires = Date.now() + 36000000000000;
 
-    const newuser = await user.save();
+    await user.save();
 
 
     let userdata = await User.findOne({ email });
-    userDetails = {
+
+    const userDetails = {
       firstname: userdata.firstname,
       lastname: userdata.lastname,
       email: userdata.email,
@@ -151,7 +159,6 @@ router.post("/", async (req, res) => {
       address: userdata.address,
       phone: userdata.phone,
       about: userdata.about,
-      status: userdata.status,
     };
 
   
@@ -172,23 +179,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// router.get("verification-email/:id" , async (req, res) => {
-//     try {
-//         let user = await User.findById(req.params.id);
-//         if (!user) {
-//             return res.status(404).json({ msg: "User not found" });
-//         }
-//         res.json(user);
-//         res.render('verification-email-template', {
-//             userName: 'kanishk soni',
-//             verificationLink: 'https://petshop.example.com/verify?token=123456',
-//         });
-//     } catch (err) {
-//         res.status(500).send("Server Error");
-//     }
-// }
 
-// );
 
 router.get("/resetpassowrd-email/:id", async (req, res) => {
   try {
@@ -252,19 +243,28 @@ router.patch("/:id", async (req, res) => {
 });
 
 
-router.patch("/confirmationgenrate/:id", async (req, res) => {
+
+router.get("/confirmationgenrate/:id", async (req, res) => {
   try {
     let user = await User.findById(req.params.id);
-    console.log("hi i run");
-    // console.log(user);
-    // console.log(req.params.id);
+
+    if (new Date(user.emailConfirmExpires) < new Date()) {
+      console.log("Email confirmation token has expired");
+    }
 
     if (!user) {
       return res.status(404).json({ msg: "User not found" });
     }
+
+    //check for already confirm 
+    user.emailConfirm && res.status(200)
+    .json({ msg: "Your Email is already confirm" });
+
+
+    //check if email confirmation token is already genrated or not and if genrated then check the expire date of token if it expire then genrate a new one
+
     if (
-      user.emailConfirmToken !== null ||
-      user.emailConfirmToken !== undefined
+      user.emailConfirmToken && new Date(user.emailConfirmExpires) > new Date()
     ) {
       return res
         .status(200)
@@ -273,17 +273,20 @@ router.patch("/confirmationgenrate/:id", async (req, res) => {
 
     const token = crypto.randomBytes(20).toString("hex");
     user.emailConfirmToken = token;
-    user.emailConfirmExpires = Date.now() + 3600000;
+    //set token expire of one year
+    user.emailConfirmExpires = Date.now() + 365 * 24 * 60 * 60 * 1000;
+
     await user.save().then((user) => {
       sendConfimationEmail(
-        firstname + " " + lastname,
-        email,
+        user.firstname + " " + user.lastname,
+        user.email,
         `${process.env.SERVER_URL}/api/users/confirmation/${user._id}/${token}`
       );
     });
 
     res.json({ msg: "Confirmation token generated", token });
   } catch (err) {
+    console.log(err)
     res.status(500).send("Server Error");
   }
 });
@@ -320,7 +323,7 @@ router.get("/confirmation/:id/:token", async (req, res) => {
       wellcomeEmail(user.firstname + " " + user.lastname, user.email);
     });
 
-    res.json({ msg: "Email confirmed" });
+    res.json({ msg: "Email confirmed Succesfully" });
   } catch (err) {
     res.status(500).send("Server Error");
   }

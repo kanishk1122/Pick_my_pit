@@ -8,15 +8,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       minlength: 3,
-      maxlength: 50,
-      // required: true,
+      maxlength: 30,
+      required: true,
     },
     lastname: {
       type: String,
       trim: true,
       minlength: 3,
-      maxlength: 50,
-      // required: true,
+      maxlength: 30,
+      required: true,
     },
     email: {
       type: String,
@@ -49,7 +49,13 @@ const userSchema = new mongoose.Schema(
       default: "user",
     },
     post: {
-      type: [String], // Specify array type to make it clear.
+      type: [
+        {
+          id: mongoose.Schema.Types.ObjectId,
+          index: Number,
+        },
+      ],
+      ref: "Post",
       default: [],
     },
     status: {
@@ -68,11 +74,10 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: () => Date.now() + 3600000, // 1 hour from now
     },
-    address: AddressSchema, // No need for `type` if importing schema.
-    phone: { 
-      type: String, 
+    address: AddressSchema,
+    phone: {
+      type: String,
       default: null,
-      match: /^\d{10}$/, // Optional: validate 10-digit phone numbers.
     },
     about: {
       type: String,

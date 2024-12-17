@@ -9,7 +9,7 @@ import { useState } from "react";
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter >
       <Routes>
         {/* Routes with Navbar */}
         <Route
@@ -35,7 +35,7 @@ function App() {
 // Main layout with Navbar
 function MainLayout({ children }) {
   return (
-    <div className="regular">
+    <div className="regular w-[99.3vw]">
       <span className="!fixed top-5 z-[9999]">
         <Navbar />
       </span>

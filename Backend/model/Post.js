@@ -1,4 +1,4 @@
-const { default: mongoose } = require('mongoose');
+const { default: mongoose } = require("mongoose");
 
 
 const Post = mongoose.Schema({
@@ -9,4 +9,16 @@ const Post = mongoose.Schema({
     },
     title : String,
     discription : String,
+    date :{
+        type : Date,
+        default : Date.now()
+    },
+    type : {
+        type :String,
+        enum : ["free", "paid"]
+    },
+    category : String,
+    species : String,
+    status : String,
+    amount : Number,
 })
