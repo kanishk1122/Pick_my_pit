@@ -18,7 +18,7 @@ function App() {
             <MainLayout>
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route className="mt-20" path="/user" element={<User />} />
+                <Route className="mt-20" path="/user/*" element={<User />} />
               </Routes>
             </MainLayout>
           }

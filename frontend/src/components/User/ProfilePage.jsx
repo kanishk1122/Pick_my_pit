@@ -15,6 +15,7 @@ const ProfilePage = () => {
   const [phone, setPhone] = useState("Not Provided Yet");
   const [country, setCountry] = useState("Not Provided Yet");
 
+
   useEffect(() => {
     setFirstName(user?.firstname);
     setLastName(user?.lastname);
@@ -79,6 +80,7 @@ const ProfilePage = () => {
               from="firstname"
               getter={firstname}
               setter={""}
+              disabled={true}
             />
           </div>
           <div className="w-1/3">
@@ -88,6 +90,7 @@ const ProfilePage = () => {
               from="lastname"
               getter={lastname}
               setter={""}
+              disabled={true}
             />
           </div>
         </div>
@@ -99,6 +102,7 @@ const ProfilePage = () => {
               from="email"
               getter={email}
               setter={""}
+              disabled={true}
             />
           </div>
           <div className="w-1/3">
@@ -108,6 +112,7 @@ const ProfilePage = () => {
               from="phone"
               getter={phone}
               setter={""}
+              disabled={true}
             />
           </div>
         </div>
@@ -119,6 +124,7 @@ const ProfilePage = () => {
               from="country"
               getter={country}
               setter={""}
+              disabled={true}
             />
           </div>
           <div className="w-1/3">
@@ -128,6 +134,7 @@ const ProfilePage = () => {
               from=""
               getter={phone}
               setter={""}
+              disabled={true}
             />
           </div>
         </div>

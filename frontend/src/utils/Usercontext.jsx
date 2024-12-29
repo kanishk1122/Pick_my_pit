@@ -17,7 +17,7 @@ export const UserProvide = ({ children }) => {
           import.meta.env.VITE_REACT_APP_CRYPTO_KEY
         ).toString(CryptoJS.enc.Utf8);
 
-        console.log(JSON.parse(decryptedPassword));
+        // console.log(JSON.parse(decryptedPassword));
         setUser(JSON.parse(decryptedPassword));
       }
     } catch (error) {

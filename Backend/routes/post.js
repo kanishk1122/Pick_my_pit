@@ -1,14 +1,17 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../model/User");
-const Post = require("../model/Post.js");
+const Post = require("../model/Post");
 const { post_validation } = require("../helper/validation_schema.js");
 require("dotenv").config();
-const { decrepter } = require("../helper/Functions.js");
+const { decrepter , checksessionId  } = require("../helper/Functions.js");
+const Route = require("express/lib/router/route.js");
+const mongoose = require("mongoose");
 
-router.get("/get_post/:id", (req, res) => {
+router.get("/get_post/:id", async (req, res) => {
   try {
-    const post = Post.find(req.params.id).populate(
+    console.log("hi")
+    const post = await Post.findById(req.params.id).populate(
       "Owner firtname lastname gender email userpic"
     );
 
@@ -18,50 +21,61 @@ router.get("/get_post/:id", (req, res) => {
   }
 });
 
-router.post("/create_post/:id/:sessionid", async (req, res) => {
+router.post("/create_post", async (req, res) => {
   try {
     try {
       await post_validation.validateAsync(req.body);
     } catch (validtionError) {
-      res.status(400).json({
+      return res.status(400).json({
         msg: validtionError.details[0].message,
       });
     }
 
-    const sessionid = req.params.sessionid;
+    const { title, discription, amount, type, category, species ,sessionid , userid } = req.body;
 
-    const { title, discription } = req.body;
+    const userId = userid;
+    console.log(userId)
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        msg: "Invalid user ID",
+      });
+    }
 
-    const user = await User.find(req.params.id);
-
-    if (user) {
+    const user = await User.findById(userId);
+    
+    if (!user) {
       return res.status(404).json({
         msg: "No user found",
       });
     }
 
-    //decript the session id for check the user is authories or not
+    // //decript the session id for check the user is authories or not
 
-    const $decryptedsession_token = decrepter(sessionid);
+    // const $decryptedsession_token = decrepter(sessionid);
 
-    if ($decryptedsession_token != user.sessionToken) {
-      return res.status(401).json({
-        msg: "Unauthorised user",
-      });
-    }
 
-    const post = new Post({
+    // //send decryted  session token on first params and on secound send user for session id
+
+    // checksessionId($decryptedsession_token , user);
+
+   const post = new Post({ 
       owner: user._id,
       title,
       discription,
+      amount,
+      type,
+      category,
+      species,
     });
 
     const savepost = await post.save();
     const postId = savepost._id;
-
-    user.posts.push({ id: postId, index: user.posts.length });
+    user.post.push({ id: postId, index: user.post.length });
 
     await user.save();
+
+    console.log(post)
+    await post.save();
 
     res.status(201).json({
         msg : "post created successfully"
@@ -77,5 +91,6 @@ router.post("/create_post/:id/:sessionid", async (req, res) => {
 });
 
 
+module.exports = router;
 
 

@@ -1,8 +1,12 @@
 const { default: mongoose } = require("mongoose");
+const AddressSchema = require('./Address.js')
 
 
-const Post = mongoose.Schema({
-    Owner : mongoose.Schema.Types.ObjectId,
+const PostSchema = mongoose.Schema({
+    owner : {
+        type : mongoose.Schema.Types.ObjectId,
+        require : true,
+    },
     images :{
         type :Array,
         default : []
@@ -15,10 +19,20 @@ const Post = mongoose.Schema({
     },
     type : {
         type :String,
-        enum : ["free", "paid"]
+        enum : ["free", "paid"],
+        default : "free"
     },
+    address : AddressSchema,
     category : String,
     species : String,
-    status : String,
+    status : {
+        type : String,
+        default : "pending"
+    },
     amount : Number,
 })
+
+const Post = mongoose.model("Post", PostSchema);
+
+
+module.exports = Post;

@@ -104,7 +104,7 @@ const Index = () => {
   }, [Cookies.get("Userdata") || user]);
 
   useEffect(() => {
-    console.log(Cookies.get("Userdata"));
+    // console.log(Cookies.get("Userdata"));
   }, [Cookies.get("Userdata") || user]);
 
   return (
@@ -169,7 +169,7 @@ const Menu = () => {
   const { user, setUser } = useUser();
   const [showmenu, setshowmenu] = useState(false);
   useEffect(() => {
-    console.log(Cookies.get("Userdata"));
+
   }, [Cookies.get("Userdata") || user]);
 
   return (

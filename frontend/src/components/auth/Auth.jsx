@@ -1,22 +1,25 @@
 import React, { useEffect, useState } from "react";
 import v1 from "../../assets/video/hsv2.mp4";
 import image from "../../assets/images/pikaso_texttoimage_A-handdrawn-vibrant-outdoor-scene-in-a-peaceful-vi.jpeg";
-import { USER } from "../../Consts/apikeys";
-import axios from "axios";
-import { validatePassword, encrypter } from "../../Consts/Functions";
 import Login from "./Login.jsx";
 import Signup from "./Signup.jsx";
 import { useSwal } from "@utils/Customswal.jsx"; // Path to SwalContext
+import Cookies from "js-cookie";
+import Googlebutton from "./Googlebutton.jsx";
+import { useNavigate } from "react-router-dom";
+
 
 const Auth = () => {
   const Swal = useSwal(); // Use SwalContext
   const [email, setEmail] = useState(null);
   const [password, setPassword] = useState(null);
   const [authtype, setauthtype] = useState("login");
-
-  
-
-  
+  const Navigate = useNavigate();
+  useEffect(()=>{
+    if(Cookies.get("Userdata")){
+      Navigate("/");
+    }
+  },[Cookies.get("Userdata")])
 
   return (
     <div className="w-screen h-screen flex justify-center items-center overflow-hidden px-20 py-10">
@@ -106,6 +109,7 @@ const Auth = () => {
               {/* Form Container */}
 
               <div className="flex  flex-col items-center justify-center absolute  bottom-10 left-1/2 -translate-x-1/2">
+                    <Googlebutton />
                 <p className="text-center ">
                   {authtype !== "login"
                     ? "Already have an account?"

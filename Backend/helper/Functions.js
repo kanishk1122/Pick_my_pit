@@ -9,7 +9,16 @@ const decrepter = (data) => {
   );
 };
 
+const checksessionId = (token ,user)=>{
+
+  if (token != user.sessionToken) {
+    return res.status(401).json({
+      msg: "Unauthorised user",
+    });
+  }
+}
 
 module.exports ={
-    decrepter
+    decrepter,
+    checksessionId
 }

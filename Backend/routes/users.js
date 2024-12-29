@@ -7,8 +7,9 @@ const { sendConfimationEmail , wellcomeEmail } = require("../mailer/mailer");
 const CryptoJS = require("crypto-js");
 require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
-const {signup_auth} = require('../helper/validation_schema.js')
+const {signup_auth , login_auth} = require('../helper/validation_schema.js')
 const axios = require("axios");
+
 
 // Route to get all users
 router.get("/getuser/?:username/?:email", async (req, res) => {
@@ -31,7 +32,15 @@ router.get("/getuser/?:username/?:email", async (req, res) => {
 
 //login route
 router.post("/login", async (req, res) => {
+
   try {
+
+    try {
+      await login_auth.validateAsync(req.body);
+    }catch(validationError){
+      return res.status(400).json({msg : validationError.details[0].message})
+    }
+
     const { email, password } = req.body;
 
     // Fetch user by email
@@ -88,7 +97,7 @@ router.post("/login", async (req, res) => {
 
     res.status(201).json({
       userdata: userDetails,
-      msg: "User created successfully",
+      msg: "User Login Successfully",
     });
   } catch (err) {
     console.error("Error during login:", err);

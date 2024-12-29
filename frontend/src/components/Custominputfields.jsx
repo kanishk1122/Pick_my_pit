@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-const Custominputfields = ({ from, name, getter, setter, type }) => {
+const Custominputfields = ({ from, name, getter, setter, type , disabled }) => {
   const [Fieldfocus, setFieldfocus] = useState(false);
 
   return (
@@ -21,6 +21,7 @@ const Custominputfields = ({ from, name, getter, setter, type }) => {
         onFocus={() => setFieldfocus(true)}
         onBlur={() => !getter && setFieldfocus(false)}
         placeholder={Fieldfocus ? name : ""}
+        disabled={disabled ? true : false}
         className="w-[100%] h-[50px] mt-8 border-2 border-black rounded-lg px-2 py-3 focus:ring-0 pr-10"
       />
     </div>

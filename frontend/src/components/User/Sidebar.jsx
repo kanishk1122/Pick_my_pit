@@ -1,12 +1,14 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
 
 const Sidebar = () => {
+  const Navigate = useNavigate();
   return (
-    <div className="w-full h-full pt-10">
+    <div className="w-[260px] h-full pt-10 min-h-screen">
       <ul className="w-full justify-center items-center flex flex-col  gap-4 mt-2 *:py-2 *:w-full px-3 *:rounded-xl text-center">
         <ol>
-          <button className=" brand-button w-full h-full  flex justify-center gap-3 items-center">
+          <button onClick={()=>Navigate("/user/")} className=" brand-button w-full h-full  flex justify-center gap-3 items-center">
             {" "}
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -21,7 +23,9 @@ const Sidebar = () => {
           </button>
         </ol>
         <ol>
-          <button className=" brand-button w-full h-full  flex justify-center gap-3 items-center">
+          <button 
+          onClick={()=>Navigate("security")}
+           className=" brand-button w-full h-full  flex justify-center gap-3 items-center">
             {" "}
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -35,7 +39,7 @@ const Sidebar = () => {
           </button>
         </ol>
         <ol>
-          <Link className=" brand-button w-full h-full  flex justify-center gap-3 items-center">
+          <button onClick={()=>Navigate("setting")} className=" brand-button w-full h-full  flex justify-center gap-3 items-center">
             {" "}
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -48,7 +52,7 @@ const Sidebar = () => {
               <path d="M14.732 4L4 4 4 8 10.732 8z" opacity=".3" />
             </svg>{" "}
             <span>Update Profile</span>
-          </Link>
+          </button>
         </ol>
         {/* <ol><button className=' brand-button w-full h-full'>demo</button></ol> */}
       </ul>
