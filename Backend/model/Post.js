@@ -22,7 +22,10 @@ const PostSchema = mongoose.Schema({
         enum : ["free", "paid"],
         default : "free"
     },
-    address : AddressSchema,
+    address : {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Address'
+      },
     category : String,
     species : String,
     status : {

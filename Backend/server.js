@@ -10,6 +10,8 @@ const mailer = require("./mailer/mailer");
 const passport = require("passport");
 const session = require("express-session");
 const authRoutes = require("./routes/auth"); 
+const address = require("./routes/address");
+const addressRoutes = require('./routes/address');
 
 //limit for image and data uplodation
 app.use(express.json({ limit: "2mb" }));
@@ -30,7 +32,7 @@ app.use(CookieParser());
 // MongoDB connection
 mongoose
   .connect(process.env.DATABASE_URL)
-  .then(() => console.log("MongoDB connected"))
+  .then(() => console.log("MongoDB connected" ))
   .catch((err) => console.log(err));
 
 // Middleware for sessions
@@ -54,7 +56,8 @@ app.get("/", (req, res) => {
 // Users route
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/post", postRoutes)
+app.use("/api/post", postRoutes);
+app.use("/api/address", addressRoutes);
 
 // Start server
 app.listen(port, () => {

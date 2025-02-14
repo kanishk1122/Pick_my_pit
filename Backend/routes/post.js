@@ -4,9 +4,28 @@ const User = require("../model/User");
 const Post = require("../model/Post");
 const { post_validation } = require("../helper/validation_schema.js");
 require("dotenv").config();
-const { decrepter , checksessionId  } = require("../helper/Functions.js");
+const { decrepter  } = require("../helper/Functions.js");
 const Route = require("express/lib/router/route.js");
 const mongoose = require("mongoose");
+const { checkSessionId } = require("../helper/Functions.js");
+
+// Add middleware to check session for all routes
+router.use(async (req, res, next) => {
+  try {
+    const userId = req.params.userId || req.body.userId;
+    if (userId) {
+      await checkSessionId(req, userId);
+    }
+    next();
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: "Authentication failed",
+      error: error.message
+    });
+  }
+});
+
 
 router.get("/get_post/:id", async (req, res) => {
   try {
@@ -55,8 +74,6 @@ router.post("/create_post", async (req, res) => {
 
 
     // //send decryted  session token on first params and on secound send user for session id
-
-    // checksessionId($decryptedsession_token , user);
 
    const post = new Post({ 
       owner: user._id,

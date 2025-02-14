@@ -1,7 +1,7 @@
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const User = require('../models/User'); // Adjust path to your User model
-const { v4: uuidv4 } = require('uuid');
+const passport = require("passport");
+const GoogleStrategy = require("passport-google-oauth20").Strategy;
+const User = require("../models/User"); // Adjust path to your User model
+const { v4: uuidv4 } = require("uuid");
 
 passport.use(
   new GoogleStrategy(
@@ -30,7 +30,7 @@ passport.use(
   )
 );
 
-passport.serializeUser((user, done) => done(null, user.id));
+passport.serializeUser((user, done) => done(null, user._id));
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);

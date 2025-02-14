@@ -25,12 +25,18 @@ const validatePassword = (password) => {
     return isValid;
   }
 
-  function encrypter(data) {
-    const cryptoKey = import.meta.env.VITE_REACT_APP_CRYPTO_KEY;
-    return CryptoJS.AES.encrypt(data, cryptoKey).toString();
-  }
+  export const encrypter = (data) => {
+    try {
+      // Ensure data is a string
+      const dataString = typeof data === 'string' ? data : JSON.stringify(data);
+      return CryptoJS.AES.encrypt(dataString, import.meta.env.VITE_REACT_APP_CRYPTO_KEY).toString();
+    } catch (error) {
+      console.error('Encryption error:', error);
+      throw error;
+    }
+  };
 
   
 
 
-  export { validatePassword, validatepasswordstring, validatepasswordnumber, validatepasswordspecial ,encrypter };
+  export { validatePassword, validatepasswordstring, validatepasswordnumber, validatepasswordspecial };

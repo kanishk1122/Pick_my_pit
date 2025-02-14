@@ -1,34 +1,34 @@
-import { BrowserRouter, Routes, Route, useParams } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Deafultpage from "../components/Deafultpage";
 import Navbar from "../components/Navbar";
 import Home from "../components/Home.jsx";
 import Auth from "../components/auth/Auth.jsx";
 import User from "../components/User/index.jsx";
+import CreatePost from "../components/CreatePost.jsx";
 import { useState } from "react";
 
 
 function App() {
   return (
-    <BrowserRouter >
-      <Routes>
-        {/* Routes with Navbar */}
-        <Route
-          path="*"
-          element={
-            <MainLayout>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route className="mt-20" path="/user/*" element={<User />} />
-              </Routes>
-            </MainLayout>
-          }
-        />
+    <Routes>
+      {/* Routes with Navbar */}
+      <Route
+        path="*"
+        element={
+          <MainLayout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route className="mt-20" path="/user/*" element={<User />} />
+              <Route path="/create-post" element={<CreatePost />} />
+            </Routes>
+          </MainLayout>
+        }
+      />
 
-        {/* Routes without Navbar */}
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/default" element={<Deafultpage />} />
-      </Routes>
-    </BrowserRouter>
+      {/* Routes without Navbar */}
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/default" element={<Deafultpage />} />
+    </Routes>
   );
 }
 

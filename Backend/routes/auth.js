@@ -68,6 +68,7 @@ router.post("/google-auth", async (req, res) => {
 
     // Prepare user details for the response
     const userDetails = {
+      id : user._id,
       firstname: user.firstname,
       lastname: user.lastname,
       email: user.email,

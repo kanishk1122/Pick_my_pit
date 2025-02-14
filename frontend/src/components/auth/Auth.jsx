@@ -39,10 +39,10 @@ const Auth = () => {
                 </>
               ) : (
                 <>
-                  <h1>
+                  <h2>
                     <span className="text-green-500">Welcome Again!</span>{" "}
                     <br /> A sweet pet is waiting for you
-                  </h1>
+                  </h2>
                 </>
               )}
             </h1>
@@ -81,7 +81,7 @@ const Auth = () => {
             >
               <path
                 fillRule="evenodd"
-                clip-rule="evenodd"
+                clipRule="evenodd"
                 d="M1156 0H0V1557H1156V0ZM204 990C173.072 990 148 1015.07 148 1046V1322C148 1352.93 173.072 1378 204 1378H956C986.928 1378 1012 1352.93 1012 1322V1046C1012 1015.07 986.928 990 956 990H204Z"
                 fill="#fff"
               />

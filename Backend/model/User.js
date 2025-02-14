@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema(
     },
     gender: {
       type: String,
-      enum: ["male", "female", "non-binary"],
+      enum: ["male", "female", "non-binary", "other"],
     },
     sessionToken: {
       type: String,
@@ -59,7 +59,8 @@ const userSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      default: "pending",
+      enum: ["active", "inactive", "banned"],
+      default: "active",
     },
     activationToken: { type: String },
     passwordResetToken: { type: String },
@@ -73,7 +74,14 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: () => Date.now() + 3600000, // 1 hour from now
     },
-    address: AddressSchema,
+    addresses: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Address'
+    }],
+    defaultAddress: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Address'
+    },
     phone: {
       type: String,
       default: null,
@@ -86,6 +94,18 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-
+// Add a pre-save hook to handle default address logic
+userSchema.pre('save', async function(next) {
+  if (this.isModified('addresses')) {
+    const defaultAddr = await mongoose.model('Address').findOne({
+      _id: { $in: this.addresses },
+      isDefault: true
+    });
+    if (defaultAddr) {
+      this.defaultAddress = defaultAddr._id;
+    }
+  }
+  next();
+});
 
 module.exports = mongoose.model("User", userSchema);

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
-
-const Custominputfields = ({ from, name, getter, setter, type , disabled }) => {
+import example_image from '../assets/images/exmaple_image.png'
+const Custominputfields = ({ from, name, getter, setter, type, disabled }) => {
   const [Fieldfocus, setFieldfocus] = useState(false);
 
   return (
@@ -29,8 +29,7 @@ const Custominputfields = ({ from, name, getter, setter, type , disabled }) => {
 };
 
 
-
-const Passwordcustomfiled = ({ password, setPassword , name }) => {
+const Passwordcustomfiled = ({ password, setPassword, name }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
 
@@ -87,6 +86,6 @@ const Passwordcustomfiled = ({ password, setPassword , name }) => {
   );
 };
 
-export {Passwordcustomfiled}
+export { Passwordcustomfiled  };
 
 export default Custominputfields;

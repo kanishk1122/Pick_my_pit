@@ -9,7 +9,17 @@ require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
 const {signup_auth , login_auth} = require('../helper/validation_schema.js')
 const axios = require("axios");
+const { checkSessionId } = require("../helper/Functions");
+const Joi = require("joi");
+const cloudinary = require('cloudinary').v2;
+const path = require('path');
 
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
 // Route to get all users
 router.get("/getuser/?:username/?:email", async (req, res) => {
@@ -350,6 +360,97 @@ router.delete("/:email", async (req, res) => {
   } catch (err) {
     res.status(500).send("Server Error");
     console.log(err);
+  }
+});
+
+// Update user schema
+const updateUserSchema = Joi.object({
+  firstname: Joi.string().min(2).max(30),
+  lastname: Joi.string().min(2).max(30),
+  password: Joi.string().min(6),
+  gender: Joi.string().valid('male', 'female', 'other'),
+  phone: Joi.string().pattern(/^[0-9]{10}$/).allow('').optional(),
+  about: Joi.string().max(500).allow(''),
+}).min(1); // Ensure at least one field is provided for update
+
+// Update user route
+router.put("/update", async (req, res) => {
+  try {
+    const { userId, profilePic, ...updateFields } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ success: false, message: "User ID is required" });
+    }
+
+    try {
+      await checkSessionId(req, userId);
+    } catch (authError) {
+      return res.status(401).json({ success: false, message: authError.message });
+    }
+
+    const { error, value } = updateUserSchema.validate(updateFields, { stripUnknown: true });
+    if (error) {
+      return res.status(400).json({ success: false, message: error.details[0].message });
+    }
+
+    // Remove empty fields
+    Object.keys(value).forEach(key => {
+      if (value[key] === '') {
+        delete value[key];
+      }
+    });
+
+    if (value.password) {
+      const salt = await bcrypt.genSalt(10);
+      value.password = await bcrypt.hash(value.password, salt);
+    }
+
+    // Handle profile picture upload
+    if (profilePic) {
+      const result = await cloudinary.uploader.upload(profilePic, {
+        folder: 'profile_pictures',
+        use_filename: true
+      });
+      value.userpic = result.secure_url;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $set: value },
+      { new: true, select: '-password -emailConfirmToken -emailConfirmExpires' }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User updated successfully",
+      user: updatedUser
+    });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+router.get("/fetch-user/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    const user = await User.findById(userId).select('-password -emailConfirmToken -emailConfirmExpires');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      user: user
+    });
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
 
