@@ -2,3 +2,6 @@ frontend/.env
 frontend/node_modules
 Backend/.env
 Backend/node_modules
+pet-admin-dashboard/.env
+pet-admin-dashboard/node_modules
+
