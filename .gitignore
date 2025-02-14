@@ -4,4 +4,6 @@ Backend/.env
 Backend/node_modules
 pet-admin-dashboard/.env
 pet-admin-dashboard/node_modules
+pet-admin-dashboard/.next
+
 
