@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import Cookies from "js-cookie";
 import CryptoJS from "crypto-js";
 import PropTypes from "prop-types";
@@ -32,11 +32,12 @@ export const UserProvide = ({ children }) => {
           userid: userData.id
         }
       });
+      console.log('Address fetch response:', response.data);
       
       if (response?.data?.success) {
         setUser(prev => ({
           ...prev,
-          addresses: response.data.addresses || []
+          addresses: response.data.addresses
         }));
         setAddressPagination(response.data.pagination);
       }
@@ -47,13 +48,13 @@ export const UserProvide = ({ children }) => {
     }
   };
 
-  const refreshUserData = async () => {
-    if (user) {
+  const fetchAndUpdateUserData = useCallback(async (user) => {
+    if (user && user.id) {
       try {
-        const response = await axios.get(`${USER.FetchUser}/${user._id}`, {
+        const response = await axios.get(`${USER.FetchUser}/${user.id}`, {
           headers: {
             Authorization: `Bearer ${user.sessionToken}`,
-            userid: user._id,
+            userid: user.id,
           },
         });
         if (response.data.success) {
@@ -68,10 +69,10 @@ export const UserProvide = ({ children }) => {
           Cookies.set("Userdata", encryptedUser, { expires: 150 });
         }
       } catch (error) {
-        console.error("Error refreshing user data:", error);
+        console.error("Error fetching user data:", error);
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
     try {
@@ -85,6 +86,7 @@ export const UserProvide = ({ children }) => {
         const userData = JSON.parse(decryptdata);
         setUser(userData);
         fetchUseraddresses(userData);
+        fetchAndUpdateUserData(userData);
       }
     } catch (error) {
       console.error('Error initializing user:', error);
@@ -93,13 +95,15 @@ export const UserProvide = ({ children }) => {
     }
   }, []);
 
+
+
   const value = {
     user,
     setUser,
     fetchUseraddresses,
-    refreshUserData,
     isLoading,
-    addressPagination
+    addressPagination,
+    fetchAndUpdateUserData
   };
 
   if (isLoading) {

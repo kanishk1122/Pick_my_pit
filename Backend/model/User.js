@@ -57,6 +57,20 @@ const userSchema = new mongoose.Schema(
       ref: "Post",
       default: [],
     },
+    coins :{
+      type: Number,
+      default: 0,
+    },
+    referralCode: {
+      type: String,
+      default: null,
+    },
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
     status: {
       type: String,
       enum: ["active", "inactive", "banned"],
@@ -90,6 +104,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    ownedPets: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Post'
+    }],
+    purchasedPets: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Post'
+    }],
   },
   { timestamps: true }
 );

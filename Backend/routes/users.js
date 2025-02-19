@@ -407,27 +407,38 @@ router.put("/update", async (req, res) => {
 
     // Handle profile picture upload
     if (profilePic) {
-      const result = await cloudinary.uploader.upload(profilePic, {
-        folder: 'profile_pictures',
-        use_filename: true
-      });
-      value.userpic = result.secure_url;
+      try {
+        const result = await cloudinary.uploader.upload(profilePic, {
+          folder: 'profile_pictures',
+          use_filename: true
+        });
+        updateFields.userpic = result.secure_url;
+      } catch (uploadError) {
+        console.error("Error uploading profile picture:", uploadError);
+        return res.status(500).json({ success: false, message: "Error uploading profile picture" });
+      }
     }
 
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       { $set: value },
       { new: true, select: '-password -emailConfirmToken -emailConfirmExpires' }
-    );
+    ).populate('addresses');
 
     if (!updatedUser) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
+    const userResponse = {
+      ...updatedUser.toObject(),
+      id: updatedUser._id
+    };
+    delete userResponse._id;
+
     res.status(200).json({
       success: true,
       message: "User updated successfully",
-      user: updatedUser
+      user: userResponse
     });
   } catch (error) {
     console.error("Error updating user:", error);
@@ -438,19 +449,63 @@ router.put("/update", async (req, res) => {
 router.get("/fetch-user/:userId", async (req, res) => {
   try {
     const userId = req.params.userId;
-    const user = await User.findById(userId).select('-password -emailConfirmToken -emailConfirmExpires');
+    const user = await User.findById(userId)
+      .select('-password -emailConfirmToken -emailConfirmExpires')
+      .populate('addresses'); // Populate the addresses field
     
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const userResponse = {
+      ...user.toObject(),
+      id: user._id
+    };
+    delete userResponse._id;
+
+    res.status(200).json({
+      success: true,
+      user: userResponse
+    });
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+});
+
+// Get user profile
+router.get("/profile/:userId", async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const user = await User.findById(userId)
+      .populate('ownedPets', 'title images species category')
+      .populate('purchasedPets', 'title images species category');
+
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
     res.status(200).json({
       success: true,
-      user: user
+      user: {
+        _id: user._id,
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        userpic: user.userpic,
+        ownedPets: user.ownedPets,
+        purchasedPets: user.purchasedPets
+        // ...other fields you want to include
+      }
     });
   } catch (error) {
-    console.error("Error fetching user:", error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("Profile fetch error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Unable to fetch user profile",
+      error: error.message
+    });
   }
 });
 

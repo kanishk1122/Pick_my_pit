@@ -2,6 +2,7 @@ import React from 'react';
 import Card from './Card.jsx';
 import nd1 from '../../assets/images/normat_dog.png';
 import nd2 from '../../assets/images/normal_dog_2.png';
+import { Link } from 'react-router-dom';
 
 const PawIcon = () => (
   <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
@@ -70,10 +71,10 @@ const Index = () => {
           <p className="text-lg text-white/90 mb-6">
             Every adoption saves two lives - the pet you adopt and the one who takes their place. Start your journey of love today.
           </p>
-          <button className="group relative mt-auto bg-white text-[#4481EB] font-bold py-4 px-8 rounded-2xl transition-all duration-300 hover:bg-[#f8f9fa] hover:shadow-lg w-full flex items-center justify-center gap-2">
+          <Link to={`/pets?species=&breed=&type=free&minPrice=0&maxPrice=100000&page=1`} className="group relative mt-auto bg-white text-[#4481EB] font-bold py-4 px-8 rounded-2xl transition-all duration-300 hover:bg-[#f8f9fa] hover:shadow-lg w-full flex items-center justify-center gap-2">
             Find Your Match
             <ArrowIcon />
-          </button>
+          </Link>
           <img src={nd1} className="mt-6 w-36 h-36 object-cover rounded-full shadow-lg border-4 border-white" alt="A friendly dog available for adoption" />
         </div>
 
@@ -89,10 +90,10 @@ const Index = () => {
           <p className="text-lg text-white/90 mb-6">
             Whether you're expanding your family or helping a pet find their forever home, we ensure safe and loving transitions.
           </p>
-          <button className="group relative mt-auto bg-white text-[#FFB347] font-bold py-4 px-8 rounded-2xl transition-all duration-300 hover:bg-[#f8f9fa] hover:shadow-lg w-full flex items-center justify-center gap-2">
+          <Link to='/pets?species=&breed=&type=paid&minPrice=0&maxPrice=100000&page=1' className="group relative mt-auto bg-white text-[#FFB347] font-bold py-4 px-8 rounded-2xl transition-all duration-300 hover:bg-[#f8f9fa] hover:shadow-lg w-full flex items-center justify-center gap-2">
             Explore Options
             <ArrowIcon />
-          </button>
+          </Link>
           <img src={nd2} className="mt-6 w-36 h-36 object-cover rounded-full shadow-lg border-4 border-white" alt="A cute dog for sale" />
         </div>
       </div>

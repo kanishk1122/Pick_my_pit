@@ -31,6 +31,10 @@ const ProfilePage = ({ user }) => {
       setFirstName(user.firstname);
       setLastName(user.lastname);
       setEmail(user.email);
+      console.log(user);
+      if (user?.phone) {
+        setPhone(user.phone);
+      }
       if (user?.addresses && user.addresses.length > 0) {
         setAddresses(user.addresses);
       }
@@ -56,11 +60,12 @@ const ProfilePage = ({ user }) => {
             <textarea
               name=""
               value={
-                user?.aboutme
-                  ? user?.aboutme
-                  : "did't get so much yet about you"
+                user?.about
+                  ? user.about.replace(/\*\*(.*?)\*\*/g, '$1').split('**').map((text, i) => 
+                      i % 2 === 0 ? text : <strong key={i}>{text}</strong>)
+                  : "didn't get so much yet about you"
               }
-              className="w-full h-[70%] resize-none focus:ring-0 focus:outline-none"
+              className="w-full h-[32vh] resize-none focus:ring-0 focus:outline-none"
               readOnly
               id=""
             ></textarea>

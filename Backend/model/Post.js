@@ -20,20 +20,48 @@ const PostSchema = mongoose.Schema({
     type : {
         type :String,
         enum : ["free", "paid"],
-        default : "free"
+        default : "free",
+        index: true // Add index for better query performance
     },
     address : {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Address'
       },
-    category : String,
-    species : String,
+    category : {
+        type: String,
+        trim: true,
+        index: true,
+    },
+    species : {
+        type: String,
+        trim: true,
+        lowercase: true, // Store in lowercase for consistent querying
+        index: true
+    },
+    breed: {
+        type: String,
+        required: false,
+        trim: true,
+        lowercase: true, // Store in lowercase for consistent querying
+        index: true
+    },
     status : {
         type : String,
         default : "pending"
     },
-    amount : Number,
+    amount : {
+        type: Number,
+        min: 0,
+        default: 0,
+        index: true // Add index for price range queries
+    }
 })
+
+
+// Add compound indexes for common filter combinations
+PostSchema.index({ species: 1, category: 1 }); // category is now used as breed
+PostSchema.index({ type: 1, amount: 1 });
+PostSchema.index({ category: 1, type: 1 });
 
 const Post = mongoose.model("Post", PostSchema);
 

@@ -1,0 +1,59 @@
+.pet-carousel .carousel .slide img {
+  max-height: 500px;
+  object-fit: cover;
+}
+
+.pet-carousel .carousel .control-arrow {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  transition: all 0.2s ease-in-out;
+}
+
+.pet-carousel .carousel .control-arrow:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 768px) {
+  .pet-carousel .carousel .slide img {
+    max-height: 300px;
+  }
+}
+
+.pet-details {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pet-tag {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-right: 10px;
+}
+
+.pet-tag.adoption {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.pet-tag.sale {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.contact-button {
+  background-color: #28a745;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+}
+
+.contact-button:hover {
+  background-color: #218838;
+}

@@ -1,9 +1,19 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useUser } from "../utils/Usercontext";
+import AddressItem from "./User/AddressItem";
+import { POST } from "../Consts/apikeys";
+import axios from "axios";
+import { motion } from "framer-motion";
+import AddressForm from './User/UpdateAddress';
+import { useSwal } from "@utils/Customswal.jsx";
 
 const CreatePost = () => {
   const { user } = useUser();
+  const Swal = useSwal();
   const [selectedImages, setSelectedImages] = useState([]);
+  const [breeds, setBreeds] = useState([]);
+  const [species, setSpecies] = useState([]);
+  const [selectedSpecies, setSelectedSpecies] = useState(null);
   const [formData, setFormData] = useState({
     petName: "",
     species: "",
@@ -25,14 +35,75 @@ const CreatePost = () => {
     }
   });
 
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+
+  useEffect(() => {
+    if (formData.species) {
+      fetchBreeds(formData.species);
+    }
+  }, [formData.species]);
+
+  useEffect(() => {
+    fetchSpecies();
+  }, []);
+
+  const fetchSpecies = async () => {
+    try {
+      const response = await axios.get(`${POST.GetSpecies}`, {
+        headers: {
+          Authorization: `Bearer ${user.sessionToken}`,
+          userid: user.id,
+        },
+      });
+      if (response.data.success) {
+        setSpecies(response.data.species);
+      }
+    } catch (error) {
+      console.error('Error fetching species:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Failed to fetch species. Please try again.',
+      });
+    }
+  };
+
+  const fetchBreeds = async (species) => {
+    try {
+      const response = await axios.get(`${POST.GetBreeds}/${species}`, {
+        headers: {
+          Authorization: `Bearer ${user.sessionToken}`,
+          userid: user.id,
+        },
+      });
+      if (response.data.success) {
+        setBreeds(response.data.breeds);
+      }
+    } catch (error) {
+      console.error('Error fetching breeds:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Oops...',
+        text: 'Failed to fetch breeds. Please try again.',
+      });
+    }
+  };
+
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
     if (files.length + selectedImages.length > 5) {
-      alert("You can upload a maximum of 5 images.");
+      Swal.fire('Error', 'You can upload a maximum of 5 images.', 'error');
       return;
     }
-    const imageUrls = files.map((file) => URL.createObjectURL(file));
-    setSelectedImages((prevImages) => [...prevImages, ...imageUrls]);
+    
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSelectedImages(prevImages => [...prevImages, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const removeImage = (index) => {
@@ -43,273 +114,288 @@ const CreatePost = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => {
-      if (name.includes('.')) {
-        const [parent, child] = name.split('.');
-        return {
-          ...prev,
-          [parent]: {
-            ...prev[parent],
-            [child]: value
-          }
-        };
-      }
-      return {
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      };
-    });
+    
+    if (name === 'species') {
+      const selectedSpecies = species.find(s => s.name === value);
+      setSelectedSpecies(selectedSpecies);
+    }
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+      // Reset breed when species changes
+      ...(name === 'species' ? { breed: '' } : {})
+    }));
   };
 
+  const handleAddressSelect = (address) => {
+    setSelectedAddress(address);
+    setShowNewAddressForm(false);
+  };
+
+  const handleNewAddressSubmit = async () => {
+    await fetchAndUpdateUserData(user);
+    setShowNewAddressForm(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (!selectedSpecies) {
+        throw new Error("Please select a valid species");
+      }
+      if (!formData.species || !formData.breed) {
+        throw new Error("Species and breed are required");
+      }
+      if (formData.petName.length < 10) {
+        throw new Error("Pet name must be at least 10 characters long");
+      }
+      if (formData.description.length < 20) {
+        throw new Error("Description must be at least 20 characters long");
+      }
+      if (!selectedAddress) {
+        throw new Error("Please select an address");
+      }
+
+      const postData = {
+        title: formData.petName,
+        discription: formData.description,
+        amount: formData.price,
+        type: formData.isNegotiable ? "paid" : "free",
+        category: formData.breed,
+        species: selectedSpecies.name,
+        userId: user.id,
+        addressId: selectedAddress._id,
+        images: selectedImages
+      };
+
+      const response = await axios.post(POST.Create, postData, {
+        headers: {
+          Authorization: `Bearer ${user.sessionToken}`,
+          "Content-Type": "application/json",
+          userid: user.id,
+        },
+      });
+
+      if (response.data.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Success!",
+          text: "Your pet listing has been created successfully.",
+        });
+        // Reset form or redirect to the new post
+      }
+    } catch (error) {
+      console.error("Error creating post:", error);
+      Swal.fire({
+        icon: "error",
+        title: "Oops...",
+        text: error.response?.data?.message || error.message || "Failed to create pet listing",
+      });
+    }
+  };
+
+  const speciesAndBreedSection = (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Species</label>
+        <select
+          name="species"
+          value={formData.species}
+          onChange={handleInputChange}
+          className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
+          required
+        >
+          <option value="">Select Species</option>
+          {species.map((item) => (
+            <option key={item._id} value={item.name}>
   return (
-    <div className="min-h-screen pt-24 px-4 mb-10">
-      <div className="max-w-4xl mx-auto bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl p-8 border border-white/40">
-        <h1 className="text-3xl font-bold text-center bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-8">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen pt-24 px-4 mb-10 bg-gradient-to-br from-green-50 to-emerald-100 border-t-2 border-black rounded-t-2xl"
+    >
+      <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-8">
+        <h1 className="text-4xl font-bold text-center bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent mb-8">
           Create New Pet Listing
         </h1>
 
-        {/* Image Upload Section */}
-        <div className="mb-8">
-          <p className="text-gray-600 mb-4">Upload Pet Images (Max 5)</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
-            {selectedImages.map((image, index) => (
-              <div key={index} className="relative group">
-                <img
-                  src={image}
-                  alt={`Preview ${index}`}
-                  className="w-full h-32 object-cover rounded-xl"
-                />
-                <button
-                  onClick={() => removeImage(index)}
-                  className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        <form onSubmit={handleSubmit}>
+          {/* Image Upload Section */}
+          <div className="mb-8">
+            <p className="text-gray-700 mb-4 font-medium">Upload Pet Images (Max 5)</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
+              {selectedImages.map((image, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  className="relative group"
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            ))}
-            {selectedImages.length < 5 && (
-              <label className="w-full h-32 border-2 border-dashed border-purple-200 rounded-xl flex items-center justify-center cursor-pointer hover:border-purple-400 transition-colors">
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleImageUpload}
-                />
-                <span className="text-purple-500">+ Add Image</span>
+                  <img
+                    src={image}
+                    alt={`Preview ${index}`}
+                    className="w-full h-32 object-cover rounded-xl shadow-md"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </motion.div>
+              ))}
+              {selectedImages.length < 5 && (
+                <label className="w-full h-32 border-2 border-dashed border-green-300 rounded-xl flex items-center justify-center cursor-pointer hover:border-emerald-400 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                  <span className="text-green-500 flex items-center">
+                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Image
+                  </span>
               </label>
             )}
           </div>
-        </div>
+          </div>
 
-        {/* Pet Details Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Pet Name</label>
-            <input
-              type="text"
-              name="petName"
-              value={formData.petName}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Species</label>
-            <select
-              name="species"
-              value={formData.species}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="">Select Species</option>
-              <option value="dog">Dog</option>
-              <option value="cat">Cat</option>
-              <option value="bird">Bird</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Breed</label>
-            <input
-              type="text"
-              name="breed"
-              value={formData.breed}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
-            <input
-              type="text"
-              name="age"
-              value={formData.age}
-              onChange={handleInputChange}
-              placeholder="e.g., 2 years, 6 months"
-              className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              rows="4"
-              className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              placeholder="Tell us about your pet's personality, habits, and any special needs..."
-            ></textarea>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Price (₹)</label>
-            <input
-              type="number"
-              name="price"
-              value={formData.price}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
-          </div>
-        </div>
-
-        {/* Negotiable Option */}
-        <div className="mb-8">
-          <label className="flex items-center space-x-3 text-gray-700">
-            <input
-              type="checkbox"
-              name="isNegotiable"
-              checked={formData.isNegotiable}
-              onChange={handleInputChange}
-              className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
-            />
-            <span>Price is negotiable</span>
-          </label>
-        </div>
-
-        {/* Address Section */}
-        <div className="mb-8">
-          <h3 className="text-2xl font-semibold mb-4">Address Details</h3>
-          <div className="mb-6">
-            <label className="flex items-center space-x-3 text-gray-700">
+          {/* Pet Details Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Pet Name</label>
               <input
-                type="checkbox"
-                name="useUserAddress"
-                checked={formData.useUserAddress}
+                type="text"
+                name="petName"
+                value={formData.petName}
                 onChange={handleInputChange}
-                className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
               />
-              <span className="text-lg">Use my profile address</span>
-            </label>
+            </motion.div>
+            {speciesAndBreedSection}
+            <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
+              <input
+                type="text"
+                name="age"
+                value={formData.age}
+                onChange={handleInputChange}
+                placeholder="e.g., 2 years, 6 months"
+                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
+              />
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }} className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                rows="6"
+                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
+                placeholder="Tell us about your pet's personality, habits, and any special needs..."
+              ></textarea>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Price (₹)</label>
+              <input
+                type="number"
+                name="price"
+                value={formData.price}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
+              />
+            </motion.div>
           </div>
 
-          {!formData.useUserAddress && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                  <input
-                    type="text"
-                    name="address.country"
-                    value={formData.address.country}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                  <input
-                    type="text"
-                    name="address.city"
-                    value={formData.address.city}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">District</label>
-                  <input
-                    type="text"
-                    name="address.district"
-                    value={formData.address.district}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">ZIP Code</label>
-                  <input
-                    type="text"
-                    name="address.zip"
-                    value={formData.address.zip}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
+          {/* Negotiable Option */}
+            <div className="mb-8">
+              <label className="flex items-center space-x-3 py-2 cursor-pointer">
                 <input
-                  type="text"
-                  name="address.street"
-                  value={formData.address.street}
+                  type="checkbox"
+                  name="isNegotiable"
+                  checked={formData.isNegotiable}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="Street name, number"
+                  className="sr-only peer"
                 />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Building</label>
-                  <input
-                    type="text"
-                    name="address.building"
-                    value={formData.address.building}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Floor</label>
-                  <input
-                    type="text"
-                    name="address.floor"
-                    value={formData.address.floor}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                  <input
-                    type="text"
-                    name="address.location"
-                    value={formData.address.location}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Additional location info"
-                  />
-                </div>
-              </div>
+                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
+                <span className="ms-3 text-sm font-medium text-gray-700">
+                  Price is negotiable
+                </span>
+              </label>
             </div>
-          )}
-        </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end">
-          <button className="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105">
-            Create Listing
-          </button>
-        </div>
+            {/* Address Section */}
+          <div className="mb-8">
+            <h3 className="text-2xl font-semibold mb-4 text-gray-800">Address Details</h3>
+            {user && user.addresses && user.addresses.length > 0 ? (
+              <div>
+                <h4 className="text-lg font-medium mb-2 text-gray-700">Select an address:</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {user.addresses.map((address) => (
+                    <motion.div
+                      key={address._id}
+                      whileHover={{ scale: 1.03 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <AddressItem
+                        address={address}
+                        onClick={() => handleAddressSelect(address)}
+                        isSelected={selectedAddress && selectedAddress._id === address._id}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-600">No addresses found. Please add a new address.</p>
+            )}
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              type="button"
+              onClick={() => setShowNewAddressForm(!showNewAddressForm)}
+              className="mt-4 bg-gradient-to-r from-green-500 to-emerald-400 text-white px-6 py-2 rounded-full hover:shadow-lg transition-all duration-300"
+            >
+              {showNewAddressForm ? "Cancel" : "Add New Address"}
+            </motion.button>
+
+            {showNewAddressForm && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mt-4 space-y-4 bg-green-50 p-6 rounded-xl shadow-inner"
+              >
+                <AddressForm onAddressAdded={handleNewAddressSubmit} />
+              </motion.div>
+            )}
+          </div>
+
+          {/* Submit Button */}
+          <div className="flex justify-end">
+            <motion.button
+              type="submit"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="brand-button px-8 py-3 text-white rounded-full hover:shadow-lg transition-all duration-300"
+            >
+              Create Listing
+            </motion.button>
+          </div>
+        </form>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

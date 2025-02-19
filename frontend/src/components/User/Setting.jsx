@@ -5,7 +5,8 @@ import { USER } from "../../Consts/apikeys";
 import axios from "axios";
 
 const Setting = () => {
-  const { user, setUser, refreshUserData } = useUser();
+  const { user, fetchAndUpdateUserData } = useUser();
+  const [loading , setLoading] = useState(false);
   const Swal = useSwal();
   const [formData, setFormData] = useState({
     firstname: "",
@@ -22,6 +23,7 @@ const Setting = () => {
 
   useEffect(() => {
     if (user) {
+      console.log("Current user data:", user); // Debug log
       setFormData({
         firstname: user.firstname || "",
         lastname: user.lastname || "",
@@ -55,15 +57,17 @@ const Setting = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
 
     try {
-      if (!user || !user._id) {
+
+      if (!user || !user.id) {
         throw new Error("User ID not found");
       }
 
       const updateData = {
         ...formData,
-        userId: user._id,
+        userId: user.id,
       };
 
       // Remove empty fields
@@ -82,13 +86,18 @@ const Setting = () => {
         headers: {
           Authorization: `Bearer ${user.sessionToken}`,
           "Content-Type": "application/json",
-          userid: user._id,
+          userid: user.id,
         },
       });
 
       if (response.data.success) {
-        await refreshUserData();
+        Swal.fire("Success", "Profile updated successfully", "success").then(async () => {
+          await fetchAndUpdateUserData(user);
+        });
         Swal.fire("Success", "Profile updated successfully", "success");
+        setLoading(false);
+      } else {
+        throw new Error(response.data.message || "Update failed");
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -188,7 +197,7 @@ const Setting = () => {
           </select>
         </div>
 
-        {/* <div>
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
           <input
             type="tel"
@@ -197,7 +206,7 @@ const Setting = () => {
             onChange={handleChange}
             className="w-full p-3 border-2 border-gray-300 rounded-xl focus:border-green-500 focus:ring-0 transition-all outline-none"
           />
-        </div> */}
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -219,23 +228,51 @@ const Setting = () => {
         <div>
           <button
             type="submit"
-            className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300"
+            disabled={loading}
+
+            className="group w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-lg font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 flex items-center justify-center"
           >
-            Update Profile
+          {loading ? (
+            <svg
+              className="animate-spin h-5 w-5 text-white mr-3 mt-4"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25 "
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V2.83a1 1 0 012 0V4a8 8 0 018 8h1.17a1 1 0 010 2H20a8 8 0 01-8 8v1.17a1 1 0 01-2 0V20a8 8 0 01-8-8H4a1 1 0 010-2h1.17a1 1 0 010-2H4z"
+              ></path>
+            </svg>
+          ) : ( <>
+          Update Profile
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 ml-2"
+              className="h-6 w-6 ml-2 group-hover:ml-3 duration-200"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
-            >
+              >
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={2}
                 d="M9 5l7 7-7 7"
-              />
+                />
             </svg>
+                </> 
+          )}
+            
+          
           </button>
         </div>
       </form>

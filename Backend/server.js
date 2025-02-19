@@ -10,8 +10,9 @@ const mailer = require("./mailer/mailer");
 const passport = require("passport");
 const session = require("express-session");
 const authRoutes = require("./routes/auth"); 
-const address = require("./routes/address");
 const addressRoutes = require('./routes/address');
+const breedRoutes = require('./routes/breed');
+const speciesRoutes = require('./routes/species');
 
 //limit for image and data uplodation
 app.use(express.json({ limit: "2mb" }));
@@ -21,7 +22,7 @@ app.use(express.urlencoded({ limit: "2mb", extended: false }));
 require("dotenv").config();
 
 // Access environment variables using process.env
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 
 // Middleware to parse JSON
 app.use(express.json());
@@ -58,6 +59,8 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/post", postRoutes);
 app.use("/api/address", addressRoutes);
+app.use("/api/breeds", breedRoutes);
+app.use("/api/species", speciesRoutes);
 
 // Start server
 app.listen(port, () => {

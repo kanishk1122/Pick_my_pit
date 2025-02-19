@@ -73,3 +73,23 @@ body.loading:after {
 .brand-button {
   @apply transition-shadow duration-300 border-2 border-black hover:shadow-customHover py-2 text-xl font-semibold bg-white rounded-lg cursor-pointer;
 }
+
+/* Add this to your global CSS file */
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #10B981 #E5E7EB;
+}
+
+.overflow-x-auto::-webkit-scrollbar {
+  height: 8px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #E5E7EB;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background-color: #10B981;
+  border-radius: 20px;
+  border: 3px solid #E5E7EB;
+}

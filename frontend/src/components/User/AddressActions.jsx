@@ -6,13 +6,13 @@ import AddressItem from "./AddressItem";
 import axios from "axios";
 
 const AddressActions = () => {
-  const Swal = useSwal();
-  const { user, fetchUseraddresses } = useUser();
+  const { user, fetchAndUpdateUserData  ,setUser} = useUser();
   const [addresses, setAddresses] = useState([]);
 
+  const Swal = useSwal();
   useEffect(() => {
-    if (user) {
-      setAddresses(user.addresses || []);
+    if (user && user.addresses) {
+      setAddresses(user.addresses);
     }
   }, [user]);
 
@@ -21,52 +21,17 @@ const AddressActions = () => {
       title: "Edit Address",
       html: `
         <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Street</label>
-            <input id="street" class="mt-1 block w-full p-2 border rounded-md" value="${
-              address.street
-            }">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700">Landmark</label>
-            <input id="landmark" class="mt-1 block w-full p-2 border rounded-md" value="${
-              address.landmark || ""
-            }">
+          ${generateInputField("street", "Street", address.street)}
+          ${generateInputField("landmark", "Landmark", address.landmark || "")}
+          <div class="grid grid-cols-2 gap-4">
+            ${generateInputField("city", "City", address.city)}
+            ${generateInputField("state", "State", address.state)}
           </div>
           <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700">City</label>
-              <input id="city" class="mt-1 block w-full p-2 border rounded-md" value="${
-                address.city
-              }">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">State</label>
-              <input id="state" class="mt-1 block w-full p-2 border rounded-md" value="${
-                address.state
-              }">
-            </div>
+            ${generateInputField("postalCode", "Postal Code", address.postalCode)}
+            ${generateInputField("country", "Country", address.country)}
           </div>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Postal Code</label>
-              <input id="postalCode" class="mt-1 block w-full p-2 border rounded-md" value="${
-                address.postalCode
-              }">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700">Country</label>
-              <input id="country" class="mt-1 block w-full p-2 border rounded-md" value="${
-                address.country
-              }">
-            </div>
-          </div>
-          <div class="flex items-center">
-            <input type="checkbox" id="isDefault" ${
-              address.isDefault ? "checked" : ""
-            } class="rounded text-green-600">
-            <label class="ml-2 text-sm text-gray-700">Set as default address</label>
-          </div>
+          ${generateCheckbox("isDefault", "Set as default address", address.isDefault)}
         </div>
       `,
       showCancelButton: true,
@@ -86,7 +51,7 @@ const AddressActions = () => {
         isDefault: document.getElementById("isDefault").checked,
       }),
     });
-
+  
     if (formValues) {
       try {
         const response = await axios.put(
@@ -100,20 +65,42 @@ const AddressActions = () => {
             },
           }
         );
-        
+  
         if (response.data.success) {
-          await fetchUseraddresses(user);
+          setUser((prev) => ({
+            ...prev,
+            addresses: prev.addresses.map((addr) =>
+              addr._id === address._id ? { ...addr, ...formValues } : addr
+            ),
+          }));
           Swal.fire("Success", "Address updated successfully", "success");
         } else {
           throw new Error(response.data.message || "Failed to update address");
         }
       } catch (error) {
         console.error("Error updating address:", error);
-        console.log("Error response:", error.response);
         Swal.fire("Error", `Failed to update address: ${error.response?.data?.message || error.message}`, "error");
       }
     }
   };
+  
+  // Utility functions for cleaner code
+  const generateInputField = (id, label, value) => `
+    <div>
+      <label class="block text-sm font-medium text-gray-700">${label}</label>
+      <input id="${id}" class="mt-1 block w-full p-2 border rounded-md" value="${value}">
+    </div>
+  `;
+  
+  const generateCheckbox = (id, label, checked) => `
+    <div class="flex items-center space-x-3 py-2">
+      <label class="inline-flex items-center cursor-pointer">
+        <input type="checkbox" id="${id}" class="sr-only peer" ${checked ? "checked" : ""}>
+        <div class="relative w-11 h-6 bg-gray-200 rounded-full peer-checked:bg-green-600 after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+        <span class="ml-3 text-sm font-medium text-zinc-900">${label}</span>
+      </label>
+    </div>
+  `;
 
   const handleDelete = async (address) => {
     const result = await Swal.fire({
@@ -137,7 +124,11 @@ const AddressActions = () => {
             userid: user.id,
           },
         });
-        await fetchUseraddresses(user);
+        setUser((prev) => {
+          const updatedAddresses = prev.addresses.filter((addr) => addr._id !== address._id);
+          return { ...prev, addresses: updatedAddresses };
+        });
+        
         Swal.fire("Success", "Address deleted successfully", "success");
       } catch (error) {
         console.error("Error deleting address:", error);
@@ -192,6 +183,7 @@ const AddressActions = () => {
       {addresses.map((address) => (
         <AddressItem
           key={address._id}
+          accessmode="edit"
           address={address}
           onEdit={handleEdit}
           onDelete={handleDelete}
