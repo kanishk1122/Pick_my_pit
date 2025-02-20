@@ -4,7 +4,7 @@ import AddressItem from "./User/AddressItem";
 import { POST } from "../Consts/apikeys";
 import axios from "axios";
 import { motion } from "framer-motion";
-import AddressForm from './User/UpdateAddress';
+import AddressForm from "./User/UpdateAddress";
 import { useSwal } from "@utils/Customswal.jsx";
 
 const CreatePost = () => {
@@ -31,8 +31,8 @@ const CreatePost = () => {
       street: "",
       building: "",
       floor: "",
-      location: ""
-    }
+      location: "",
+    },
   });
 
   const [selectedAddress, setSelectedAddress] = useState(null);
@@ -60,11 +60,11 @@ const CreatePost = () => {
         setSpecies(response.data.species);
       }
     } catch (error) {
-      console.error('Error fetching species:', error);
+      console.error("Error fetching species:", error);
       Swal.fire({
-        icon: 'error',
-        title: 'Oops...',
-        text: 'Failed to fetch species. Please try again.',
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to fetch species. Please try again.",
       });
     }
   };
@@ -81,11 +81,11 @@ const CreatePost = () => {
         setBreeds(response.data.breeds);
       }
     } catch (error) {
-      console.error('Error fetching breeds:', error);
+      console.error("Error fetching breeds:", error);
       Swal.fire({
-        icon: 'error',
-        title: 'Oops...',
-        text: 'Failed to fetch breeds. Please try again.',
+        icon: "error",
+        title: "Oops...",
+        text: "Failed to fetch breeds. Please try again.",
       });
     }
   };
@@ -93,14 +93,14 @@ const CreatePost = () => {
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
     if (files.length + selectedImages.length > 5) {
-      Swal.fire('Error', 'You can upload a maximum of 5 images.', 'error');
+      Swal.fire("Error", "You can upload a maximum of 5 images.", "error");
       return;
     }
-    
-    files.forEach(file => {
+
+    files.forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setSelectedImages(prevImages => [...prevImages, reader.result]);
+        setSelectedImages((prevImages) => [...prevImages, reader.result]);
       };
       reader.readAsDataURL(file);
     });
@@ -114,17 +114,17 @@ const CreatePost = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
-    if (name === 'species') {
-      const selectedSpecies = species.find(s => s.name === value);
+
+    if (name === "species") {
+      const selectedSpecies = species.find((s) => s.name === value);
       setSelectedSpecies(selectedSpecies);
     }
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: type === "checkbox" ? checked : value,
       // Reset breed when species changes
-      ...(name === 'species' ? { breed: '' } : {})
+      ...(name === "species" ? { breed: "" } : {}),
     }));
   };
 
@@ -166,7 +166,7 @@ const CreatePost = () => {
         species: selectedSpecies.name,
         userId: user.id,
         addressId: selectedAddress._id,
-        images: selectedImages
+        images: selectedImages,
       };
 
       const response = await axios.post(POST.Create, postData, {
@@ -190,15 +190,23 @@ const CreatePost = () => {
       Swal.fire({
         icon: "error",
         title: "Oops...",
-        text: error.response?.data?.message || error.message || "Failed to create pet listing",
+        text:
+          error.response?.data?.message ||
+          error.message ||
+          "Failed to create pet listing",
       });
     }
   };
 
   const speciesAndBreedSection = (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-      <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Species</label>
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        transition={{ type: "spring", stiffness: 300 }}
+      >
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Species
+        </label>
         <select
           name="species"
           value={formData.species}
@@ -209,8 +217,16 @@ const CreatePost = () => {
           <option value="">Select Species</option>
           {species.map((item) => (
             <option key={item._id} value={item.name}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+      </motion.div>
+    </div>
+  );
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -224,7 +240,9 @@ const CreatePost = () => {
         <form onSubmit={handleSubmit}>
           {/* Image Upload Section */}
           <div className="mb-8">
-            <p className="text-gray-700 mb-4 font-medium">Upload Pet Images (Max 5)</p>
+            <p className="text-gray-700 mb-4 font-medium">
+              Upload Pet Images (Max 5)
+            </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
               {selectedImages.map((image, index) => (
                 <motion.div
@@ -244,8 +262,18 @@ const CreatePost = () => {
                     onClick={() => removeImage(index)}
                     className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                   >
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    <svg
+                      className="w-4 h-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
                     </svg>
                   </button>
                 </motion.div>
@@ -260,20 +288,36 @@ const CreatePost = () => {
                     onChange={handleImageUpload}
                   />
                   <span className="text-green-500 flex items-center">
-                    <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    <svg
+                      className="w-6 h-6 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      ></path>
                     </svg>
                     Add Image
                   </span>
-              </label>
-            )}
-          </div>
+                </label>
+              )}
+            </div>
           </div>
 
           {/* Pet Details Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Pet Name</label>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Pet Name
+              </label>
               <input
                 type="text"
                 name="petName"
@@ -283,8 +327,13 @@ const CreatePost = () => {
               />
             </motion.div>
             {speciesAndBreedSection}
-            <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Age</label>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Age
+              </label>
               <input
                 type="text"
                 name="age"
@@ -294,8 +343,14 @@ const CreatePost = () => {
                 className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
               />
             </motion.div>
-            <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }} className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              className="md:col-span-2"
+            >
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Description
+              </label>
               <textarea
                 name="description"
                 value={formData.description}
@@ -305,8 +360,13 @@ const CreatePost = () => {
                 placeholder="Tell us about your pet's personality, habits, and any special needs..."
               ></textarea>
             </motion.div>
-            <motion.div whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Price (₹)</label>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Price (₹)
+              </label>
               <input
                 type="number"
                 name="price"
@@ -318,28 +378,32 @@ const CreatePost = () => {
           </div>
 
           {/* Negotiable Option */}
-            <div className="mb-8">
-              <label className="flex items-center space-x-3 py-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  name="isNegotiable"
-                  checked={formData.isNegotiable}
-                  onChange={handleInputChange}
-                  className="sr-only peer"
-                />
-                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
-                <span className="ms-3 text-sm font-medium text-gray-700">
-                  Price is negotiable
-                </span>
-              </label>
-            </div>
-
-            {/* Address Section */}
           <div className="mb-8">
-            <h3 className="text-2xl font-semibold mb-4 text-gray-800">Address Details</h3>
+            <label className="flex items-center space-x-3 py-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="isNegotiable"
+                checked={formData.isNegotiable}
+                onChange={handleInputChange}
+                className="sr-only peer"
+              />
+              <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
+              <span className="ms-3 text-sm font-medium text-gray-700">
+                Price is negotiable
+              </span>
+            </label>
+          </div>
+
+          {/* Address Section */}
+          <div className="mb-8">
+            <h3 className="text-2xl font-semibold mb-4 text-gray-800">
+              Address Details
+            </h3>
             {user && user.addresses && user.addresses.length > 0 ? (
               <div>
-                <h4 className="text-lg font-medium mb-2 text-gray-700">Select an address:</h4>
+                <h4 className="text-lg font-medium mb-2 text-gray-700">
+                  Select an address:
+                </h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {user.addresses.map((address) => (
                     <motion.div
@@ -350,16 +414,20 @@ const CreatePost = () => {
                       <AddressItem
                         address={address}
                         onClick={() => handleAddressSelect(address)}
-                        isSelected={selectedAddress && selectedAddress._id === address._id}
+                        isSelected={
+                          selectedAddress && selectedAddress._id === address._id
+                        }
                       />
                     </motion.div>
                   ))}
                 </div>
               </div>
             ) : (
-              <p className="text-gray-600">No addresses found. Please add a new address.</p>
+              <p className="text-gray-600">
+                No addresses found. Please add a new address.
+              </p>
             )}
-            
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
