@@ -3,13 +3,19 @@ const router = express.Router();
 const User = require("../model/User");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
-const { sendConfimationEmail, wellcomeEmail } = require("../mailer/mailer");
+const {
+  sendConfimationEmail,
+  wellcomeEmail,
+} = require("../../mailer/mailer.js");
 const CryptoJS = require("crypto-js");
 require("dotenv").config();
 const { v4: uuidv4 } = require("uuid");
-const { signup_auth, login_auth } = require("../helper/validation_schema.js");
+const {
+  signup_auth,
+  login_auth,
+} = require("../helper/validation_schema.js");
 const axios = require("axios");
-const { checkSessionId } = require("../helper/Functions");
+const { checkSessionId } = require("../helper/Functions.js");
 const Joi = require("joi");
 const cloudinary = require("cloudinary").v2;
 const path = require("path");
@@ -535,7 +541,9 @@ router.get("/generate-referral-link/:userId", async (req, res) => {
     if (!user.referralCode) {
       user.referralCode = uuidv4();
       await user.save();
-      console.log(`Generated new referral code for user ${user._id}: ${user.referralCode}`);
+      console.log(
+        `Generated new referral code for user ${user._id}: ${user.referralCode}`
+      );
     }
 
     const referralLink = `${process.env.FRONTEND_URL}/signup?referralCode=${user.referralCode}`;

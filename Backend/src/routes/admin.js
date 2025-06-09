@@ -112,7 +112,7 @@ router.post("/login", async (req, res) => {
     // Verify password
     let authenticated = false;
 
-    console.log(`Found user: ${foundUser.email} (Model: ${password })`);
+    console.log(`Found user: ${foundUser.email} (Model: ${password})`);
     console.log("Attempting to verify password...");
 
     const decryptedPassword = CryptoJS.AES.decrypt(
@@ -123,7 +123,10 @@ router.post("/login", async (req, res) => {
     // Try bcrypt compare
     try {
       if (foundUser.password) {
-        const isMatch = await bcrypt.compare(decryptedPassword, foundUser.password);
+        const isMatch = await bcrypt.compare(
+          decryptedPassword,
+          foundUser.password
+        );
         if (isMatch) {
           console.log("Password verified with bcrypt");
           authenticated = true;

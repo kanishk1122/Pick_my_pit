@@ -1,19 +1,19 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const app = express();
-const userRoutes = require("./routes/users");
+const userRoutes = require("./src/routes/users.js");
 const morgan = require("morgan");
-const postRoutes = require("./routes/post.js");
+const postRoutes = require("./src/routes/post.js");
 const cors = require("cors");
 const CookieParser = require("cookie-parser");
 const mailer = require("./mailer/mailer");
 const passport = require("passport");
 const session = require("express-session");
-const authRoutes = require("./routes/auth");
-const addressRoutes = require("./routes/address");
-const breedRoutes = require("./routes/breed");
-const speciesRoutes = require("./routes/species");
-const adminRoutes = require("./routes/admin");
+const authRoutes = require("./src/routes/auth.js");
+const addressRoutes = require("./src/routes/address.js");
+const breedRoutes = require("./src/routes/breed.js");
+const speciesRoutes = require("./src/routes/species.js");
+const adminRoutes = require("./src/routes/admin.js");
 
 //limit for image and data uplodation
 app.use(express.json({ limit: "2mb" }));
