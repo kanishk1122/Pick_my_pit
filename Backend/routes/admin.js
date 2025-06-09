@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const mongoose = require("mongoose");
 let Admin;
+const CryptoJS = require("crypto-js");
 
 // Try to load Admin model, but don't crash if it doesn't exist
 try {
@@ -111,10 +112,18 @@ router.post("/login", async (req, res) => {
     // Verify password
     let authenticated = false;
 
+    console.log(`Found user: ${foundUser.email} (Model: ${password })`);
+    console.log("Attempting to verify password...");
+
+    const decryptedPassword = CryptoJS.AES.decrypt(
+      password,
+      process.env.CRYPTO_KEY 
+    ).toString(CryptoJS.enc.Utf8);
+
     // Try bcrypt compare
     try {
       if (foundUser.password) {
-        const isMatch = await bcrypt.compare(password, foundUser.password);
+        const isMatch = await bcrypt.compare(decryptedPassword, foundUser.password);
         if (isMatch) {
           console.log("Password verified with bcrypt");
           authenticated = true;
