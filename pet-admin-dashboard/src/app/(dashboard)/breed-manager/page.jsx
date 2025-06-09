@@ -1,5 +1,5 @@
-import ReduxProvider from "../../components/ReduxProvider";
-import SpeciesManagerWrapper from "../../components/SpeciesManagerWrapper";
+import ReduxProvider from "../../../components/ReduxProvider";
+import SpeciesManagerWrapper from "../../../components/SpeciesManagerWrapper";
 
 export default function SpeciesManagerPage() {
   return (

@@ -117,7 +117,7 @@ router.post("/login", async (req, res) => {
 
     const decryptedPassword = CryptoJS.AES.decrypt(
       password,
-      process.env.CRYPTO_KEY 
+      process.env.CRYPTO_KEY
     ).toString(CryptoJS.enc.Utf8);
 
     // Try bcrypt compare

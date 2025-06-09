@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import Sidebar from "@/components/Sidebar";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
 import { Button } from "primereact/button";
@@ -8,8 +10,8 @@ import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import { InputText } from "primereact/inputtext";
 
 export default function UsersPage() {
+  const { user, isAuthenticated, loading } = useAuth();
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [globalFilter, setGlobalFilter] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
 
@@ -44,7 +46,6 @@ export default function UsersPage() {
         },
         // Add more dummy users as needed
       ]);
-      setLoading(false);
     }, 1000);
   }, []);
 
@@ -117,47 +118,83 @@ export default function UsersPage() {
     );
   };
 
-  return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-white">User Management</h1>
-        <span className="p-input-icon-left">
-          <i className="pi pi-search" />
-          <InputText
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder="Search..."
-          />
-        </span>
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-zinc-950">
+        <div className="text-white">Loading...</div>
       </div>
+    );
+  }
 
-      <DataTable
-        value={users}
-        paginator
-        rows={10}
-        rowsPerPageOptions={[5, 10, 25]}
-        tableStyle={{ minWidth: "50rem" }}
-        loading={loading}
-        globalFilter={globalFilter}
-        selection={selectedUser}
-        onSelectionChange={(e) => setSelectedUser(e.value)}
-        dataKey="id"
-        className="bg-zinc-800/50"
-      >
-        <Column field="name" header="Name" sortable />
-        <Column field="email" header="Email" sortable />
-        <Column field="role" header="Role" body={roleBodyTemplate} sortable />
-        <Column
-          field="status"
-          header="Status"
-          body={statusBodyTemplate}
-          sortable
-        />
-        <Column field="created" header="Registered" sortable />
-        <Column header="Actions" body={actionBodyTemplate} />
-      </DataTable>
+  if (!isAuthenticated) {
+    return null;
+  }
 
-      <ConfirmDialog />
+  return (
+    <div className="flex min-h-screen bg-zinc-950">
+      <Sidebar />
+      <div className="ml-64 flex-1">
+        <header className="bg-zinc-900/80 backdrop-blur-sm border-b border-zinc-800 h-16 flex items-center px-6">
+          <div className="flex-1">
+            <h2 className="text-lg font-medium text-white">
+              Pet Admin Dashboard
+            </h2>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-zinc-400">
+              Logged in as: <span className="text-zinc-200">{user?.email}</span>
+            </div>
+          </div>
+        </header>
+        <main className="p-6">
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h1 className="text-2xl font-bold text-white">User Management</h1>
+              <span className="p-input-icon-left">
+                <i className="pi pi-search" />
+                <InputText
+                  value={globalFilter}
+                  onChange={(e) => setGlobalFilter(e.target.value)}
+                  placeholder="Search..."
+                />
+              </span>
+            </div>
+
+            <DataTable
+              value={users}
+              paginator
+              rows={10}
+              rowsPerPageOptions={[5, 10, 25]}
+              tableStyle={{ minWidth: "50rem" }}
+              loading={loading}
+              globalFilter={globalFilter}
+              selection={selectedUser}
+              onSelectionChange={(e) => setSelectedUser(e.value)}
+              dataKey="id"
+              className="bg-zinc-800/50"
+            >
+              <Column field="name" header="Name" sortable />
+              <Column field="email" header="Email" sortable />
+              <Column
+                field="role"
+                header="Role"
+                body={roleBodyTemplate}
+                sortable
+              />
+              <Column
+                field="status"
+                header="Status"
+                body={statusBodyTemplate}
+                sortable
+              />
+              <Column field="created" header="Registered" sortable />
+              <Column header="Actions" body={actionBodyTemplate} />
+            </DataTable>
+
+            <ConfirmDialog />
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
