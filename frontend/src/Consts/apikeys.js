@@ -11,6 +11,8 @@ const USER = {
   Auth: baseurl + Authpath + "google-auth",
   Update: baseurl + USERPath + "update",
   FetchUser: baseurl + USERPath + "fetch-user",
+  GenerateReferralLink: (userId) =>
+    `${baseurl}users/generate-referral-link/${userId}`,
 };
 
 export { USER };

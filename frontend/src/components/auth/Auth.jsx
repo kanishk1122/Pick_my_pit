@@ -8,72 +8,92 @@ import Cookies from "js-cookie";
 import Googlebutton from "./Googlebutton.jsx";
 import { useNavigate } from "react-router-dom";
 
-
 const Auth = () => {
   const Swal = useSwal(); // Use SwalContext
   const [email, setEmail] = useState(null);
   const [password, setPassword] = useState(null);
   const [authtype, setauthtype] = useState("login");
   const Navigate = useNavigate();
-  useEffect(()=>{
-    if(Cookies.get("Userdata")){
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    if (Cookies.get("Userdata")) {
       Navigate("/");
     }
-  },[Cookies.get("Userdata")])
+  }, [Cookies.get("Userdata")]);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
-    <div className="w-screen h-screen flex justify-center items-center overflow-hidden px-20 py-10">
-      <div className="bg-white w-full h-full flex  justify-between items-center rounded-3xl py-5 px-10">
+    <div className="w-screen h-screen flex justify-center items-center overflow-hidden px-4 md:px-20 py-5 md:py-10">
+      <div className="bg-white w-full h-full flex flex-col md:flex-row justify-between items-center rounded-3xl py-3 md:py-5 px-4 md:px-10">
         {/* Left Section */}
-        <div className={`flex flex-col justify-between  h-full w-1/2 relative`}>
+        <div
+          className={`flex flex-col justify-between h-full ${
+            isMobile ? "w-full h-fit" : "w-1/2"
+          } relative order-2 md:order-1`}
+        >
           <div
-            className={`absolute top-0 ${
-              authtype !== "login" ? "left-[65vw]" : "left-1/2"
-            } duration-200 -translate-x-1/2 w-full h-full flex  justify-between flex-col py-6`}
+            className={`${isMobile ? "relative" : "absolute"} top-0 ${
+              !isMobile && (authtype !== "login" ? "left-[65vw]" : "left-1/2")
+            } duration-200 ${
+              !isMobile && "-translate-x-1/2"
+            } w-full h-full flex justify-between flex-col py-6`}
           >
-            <h1 className="text-6xl font-extrabold leading-snug">
+            <h1 className="text-3xl md:text-6xl font-extrabold leading-tight md:leading-snug text-center md:text-left">
               {authtype !== "login" ? (
                 <>
                   <span className="text-[#FFD700]">Signup</span> <br /> to get
                   started
                 </>
               ) : (
-                <>
+                <div className="text-center max-sm:mt-24">
                   <h2>
                     <span className="text-green-500">Welcome Again!</span>{" "}
                     <br /> A sweet pet is waiting for you
                   </h2>
-                </>
+                </div>
               )}
             </h1>
-            {authtype !== "login" ? (
-              <img
-                src={image}
-                alt=""
-                className="w-[90%] mr-20 h-[300px] object-cover rounded-3xl"
-              />
-            ) : (
-              <video
-                className="w-[90%] mr-20 h-[200px] object-cover rounded-3xl"
-                autoPlay
-                loop
-                muted
-              >
-                <source src={v1} type="video/mp4" />
-              </video>
-            )}
+            {!isMobile &&
+              (authtype !== "login" ? (
+                <img
+                  src={image}
+                  alt=""
+                  className="w-[90%] mr-20 h-[300px] object-cover rounded-3xl"
+                />
+              ) : (
+                <video
+                  className="w-[90%] mr-20 h-[200px] object-cover rounded-3xl"
+                  autoPlay
+                  loop
+                  muted
+                >
+                  <source src={v1} type="video/mp4" />
+                </video>
+              ))}
           </div>
         </div>
 
         {/* Right Section */}
-        <div className={`relative w-1/2 h-full  `}>
+        <div
+          className={`relative ${
+            isMobile ? "w-full" : "w-1/2"
+          } h-full order-1 md:order-2`}
+        >
           <div
-            className={`absolute top-0 ${
-              authtype == "login" ? "left-1/2" : "-left-1/2"
-            } duration-200 -translate-x-1/2 w-full h-full`}
+            className={`${isMobile ? "relative" : "absolute"} top-0 ${
+              !isMobile && (authtype == "login" ? "left-1/2" : "-left-1/2")
+            } duration-200 ${!isMobile && "-translate-x-1/2"} w-full h-full`}
           >
             <svg
-              className={` bg-white absolute top-0 left-1/2 h-full w-[80%] -translate-x-1/2 bg-opacity-50 backdrop-blur-[1px] border-2 border-black rounded-3xl`}
+              className={`${
+                isMobile ? "hidden" : "block"
+              } bg-white absolute top-0 left-1/2 h-full w-[80%] -translate-x-1/2 bg-opacity-50 backdrop-blur-[1px] border-2 border-black rounded-3xl`}
               height="100%"
               viewBox="0 0 1156 1557"
               fill="none"
@@ -87,7 +107,7 @@ const Auth = () => {
               />
             </svg>
 
-            <div className="absolute top-0 left-0 w-full h-full  rounded-3xl px-20  ">
+            <div className="absolute top-0 left-0 w-full h-full rounded-3xl px-4 md:px-20">
               {authtype === "login" ? (
                 <Login
                   email={email}
@@ -106,26 +126,25 @@ const Auth = () => {
                   authtype={authtype}
                 />
               )}
-              {/* Form Container */}
 
-              <div className="flex  flex-col items-center justify-center absolute  bottom-10 left-1/2 -translate-x-1/2">
-                    <Googlebutton />
-                <p className="text-center ">
+              <div className="flex flex-col items-center justify-center absolute   md:bottom-10 left-1/2 -translate-x-1/2">
+                <Googlebutton />
+                <p className="text-center text-sm md:text-base mt-3">
                   {authtype !== "login"
                     ? "Already have an account?"
                     : "Don't have an account?"}
                 </p>
                 <button
-                  onClick={() => {
-                    setauthtype(`${authtype === "login" ? "signup" : "login"}`);
-                  }}
-                  className="group brand-button h-[50px] w-fit  flex gap-16   justify-between px-10 items-center"
+                  onClick={() =>
+                    setauthtype(authtype === "login" ? "signup" : "login")
+                  }
+                  className="group brand-button h-[40px] md:h-[50px] w-fit flex gap-4 md:gap-16 justify-between px-6 md:px-10 items-center mt-2"
                 >
-                  <span className="text-xl">
+                  <span className="text-base md:text-xl">
                     {authtype !== "login" ? "Login" : "Signup"}
                   </span>
                   <div
-                    className={`w-fit h-fit text-white bg-black rounded-full p-1   ${
+                    className={`w-fit h-fit text-white bg-black rounded-full p-1 ${
                       authtype !== "login"
                         ? "group-hover:rotate-0"
                         : "group-hover:rotate-180"
@@ -134,8 +153,9 @@ const Auth = () => {
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"
-                      width="32"
-                      height="32"
+                      width="24"
+                      height="24"
+                      className="md:w-8 md:h-8"
                       fill="currentColor"
                     >
                       <path d="M7.82843 10.9999H20V12.9999H7.82843L13.1924 18.3638L11.7782 19.778L4 11.9999L11.7782 4.22168L13.1924 5.63589L7.82843 10.9999Z"></path>

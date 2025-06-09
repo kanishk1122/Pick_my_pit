@@ -1,8 +1,11 @@
 import React from "react";
-import Sidebar from './Sidebar.jsx';
-import Profileroutes from './Profileroutes.jsx'; // Nested routes
+import Sidebar from "./Sidebar.jsx";
+import Profileroutes from "./Profileroutes.jsx"; // Nested routes
+import ReferralLink from "./ReferralLink.jsx";
 
 const Index = () => {
+  const userId = "user-id-from-context-or-props"; // Replace with actual user ID
+
   return (
     <div className="h-fit flex -mb-6 bg-white rounded-t-[30px] mt-20 gap-2 border-y-2  border-black">
       {/* Sidebar */}
@@ -13,6 +16,7 @@ const Index = () => {
       {/* Main Content: Nested Routes */}
       <div className="w-[80%] p-5">
         <Profileroutes />
+        
       </div>
     </div>
   );

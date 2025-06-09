@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useSwal } from "@utils/Customswal.jsx";
 import { ADDRESS } from "../../Consts/apikeys";
-import SDK from "../../utils/sdk";
+import axios from "axios";
 import { useUser } from "../../utils/Usercontext"; // Update import
 
 const AddressForm = ({ user }) => {
@@ -20,11 +20,12 @@ const AddressForm = ({ user }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const api = new SDK(user);
+    
 
     try {
-      const response = await api.post(ADDRESS.Add, {
-        userId: user._id,
+      console.log("User:", user);
+      const response = await axios.post(ADDRESS.Add, {
+        userId: user.id,
         ...formData,
       });
 

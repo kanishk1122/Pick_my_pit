@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import Cookies from "js-cookie";
 import CryptoJS from "crypto-js";
 import PropTypes from "prop-types";
@@ -15,34 +22,40 @@ export const UserProvide = ({ children }) => {
     totalPages: 1,
     totalAddresses: 0,
     hasNextPage: false,
-    hasPrevPage: false
+    hasPrevPage: false,
   });
 
   const fetchUseraddresses = async (userData, page = 1, limit = 10) => {
     try {
       setIsLoading(true);
       if (!userData?.id) {
-        console.error('No valid user ID available');
+        console.error("No valid user ID available");
         return;
       }
 
-      const response = await axios.get(`${ADDRESS.Get(userData.id)}?page=${page}&limit=${limit}`, {
-        headers: {
-          Authorization: `Bearer ${userData.sessionToken}`,
-          userid: userData.id
+      const response = await axios.get(
+        `${ADDRESS.Get(userData.id)}?page=${page}&limit=${limit}`,
+        {
+          headers: {
+            Authorization: `Bearer ${userData.sessionToken}`,
+            userid: userData.id,
+          },
         }
-      });
-      console.log('Address fetch response:', response.data);
-      
+      );
+      console.log("Address fetch response:", response.data);
+
       if (response?.data?.success) {
-        setUser(prev => ({
+        setUser((prev) => ({
           ...prev,
-          addresses: response.data.addresses
+          addresses: response.data.addresses,
         }));
         setAddressPagination(response.data.pagination);
       }
     } catch (error) {
-      console.error('Error fetching addresses:', error.response?.data || error.message);
+      console.error(
+        "Error fetching addresses:",
+        error.response?.data || error.message
+      );
     } finally {
       setIsLoading(false);
     }
@@ -60,7 +73,7 @@ export const UserProvide = ({ children }) => {
         if (response.data.success) {
           const updatedUser = response.data.user;
           setUser(updatedUser);
-          
+
           // Encrypt and save to cookie
           const encryptedUser = CryptoJS.AES.encrypt(
             JSON.stringify(updatedUser),
@@ -73,6 +86,15 @@ export const UserProvide = ({ children }) => {
       }
     }
   }, []);
+
+  const getUserheader = () => {
+    return {
+      headers: {
+        Authorization: `Bearer ${user.sessionToken}`,
+        userid: user.id,
+      },
+    };
+  };
 
   useEffect(() => {
     try {
@@ -89,13 +111,11 @@ export const UserProvide = ({ children }) => {
         fetchAndUpdateUserData(userData);
       }
     } catch (error) {
-      console.error('Error initializing user:', error);
+      console.error("Error initializing user:", error);
     } finally {
       setIsLoading(false);
     }
   }, []);
-
-
 
   const value = {
     user,
@@ -103,7 +123,8 @@ export const UserProvide = ({ children }) => {
     fetchUseraddresses,
     isLoading,
     addressPagination,
-    fetchAndUpdateUserData
+    fetchAndUpdateUserData,
+    getUserheader,
   };
 
   if (isLoading) {
@@ -114,11 +135,7 @@ export const UserProvide = ({ children }) => {
     );
   }
 
-  return (
-    <usercontext.Provider value={value}>
-      {children}
-    </usercontext.Provider>
-  );
+  return <usercontext.Provider value={value}>{children}</usercontext.Provider>;
 };
 UserProvide.propTypes = {
   children: PropTypes.node.isRequired,

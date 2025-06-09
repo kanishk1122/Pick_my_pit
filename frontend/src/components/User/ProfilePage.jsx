@@ -4,7 +4,7 @@ import AddressActions from "./AddressActions";
 import Custominputfields from "../Custominputfields";
 
 const ProfilePage = ({ user }) => {
-  console.log(user);
+ 
   const [userpic, setUserpic] = useState(user?.userpic);
   const [firstname, setFirstName] = useState();
   const [lastname, setLastName] = useState();

@@ -3,7 +3,8 @@ const { OAuth2Client } = require("google-auth-library");
 const CryptoJS = require("crypto-js");
 const uuidv4 = require("uuid").v4;
 const User = require("../model/User.js"); // Adjust to your actual User model path
-const axios = require("axios")
+const axios = require("axios");
+require("dotenv").config();
 
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -11,46 +12,63 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // Google Auth Route
 router.post("/google-auth", async (req, res) => {
   try {
-    const { token } = req.body;
+    const { token, referralCode } = req.body;
 
-    console.log(token.split('.').length)
+    console.log(token.split(".").length);
 
     // Verify the Google Token
     const googleResponse = await axios.get(
-        "https://www.googleapis.com/oauth2/v2/userinfo",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      "https://www.googleapis.com/oauth2/v2/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-
-    const { email, name, picture ,given_name , family_name } = googleResponse.data;
+    const { email, name, picture, given_name, family_name } =
+      googleResponse.data;
 
     // Check if user exists in the database
     let user = await User.findOne({ email });
 
     let isNewUser = false;
 
-    console.log(given_name , family_name )
+    console.log(given_name, family_name);
 
     if (!user) {
       // Create new user (sign-up flow)
       user = new User({
-        firstname : given_name,
+        firstname: given_name,
         lastname: family_name || "",
         email,
         userpic: picture,
-        emailConfirm : true,
+        emailConfirm: true,
+        referralCode: uuidv4(), // Generate a unique referral code
       });
+
+      if (referralCode) {
+        const referrer = await User.findOne({ referralCode });
+        if (referrer) {
+          user.referredBy = referrer._id;
+          referrer.coins += 50; // Add 50 coins to referrer
+          await referrer.save();
+        }
+      }
 
       await user.save();
 
       isNewUser = true;
+    } else if (referralCode && !user.referredBy) {
+      // Handle referral for existing Google Auth users
+      const referrer = await User.findOne({ referralCode });
+      if (referrer) {
+        user.referredBy = referrer._id;
+        referrer.coins += 50; // Add 50 coins to referrer
+        await referrer.save();
+        await user.save();
+      }
     }
-
-
 
     // Generate session token
     const sessionToken = uuidv4();
@@ -68,7 +86,7 @@ router.post("/google-auth", async (req, res) => {
 
     // Prepare user details for the response
     const userDetails = {
-      id : user._id,
+      id: user._id,
       firstname: user.firstname,
       lastname: user.lastname,
       email: user.email,

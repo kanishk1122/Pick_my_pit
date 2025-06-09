@@ -6,11 +6,11 @@ import Setting from "./Setting.jsx"; // Different component for setting
 import { useUser } from "../../utils/Usercontext";
 import AddressForm from "./UpdateAddress.jsx"; // Different component for address
 import UserPosts from './UserPosts';
+import ReferralLink from './ReferralLink';
 
 const Profileroutes = () => {
   const { user } = useUser();
 
-  console.log(user , "from Profileroutes");
   return (
     <Routes>
       {/* Routes under /user */}
@@ -19,6 +19,8 @@ const Profileroutes = () => {
       <Route path="/setting" element={<Setting user={user} />} />
       <Route path="/address" element={<AddressForm user={user} />} />
       <Route path="/posts" element={<UserPosts />} />
+      <Route path="*" element={<ProfilePage user={user} />} />
+      <Route path="/refer" element={<ReferralLink user={user} />} />
 
       {/* <Route path="*" element={<Setting/>} /> */}
     </Routes>

@@ -1,154 +1,110 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const Species = require('../model/Species');
-const { checkSessionId } = require('../helper/Functions.js');
+const Post = require("../model/Post");
 
-// Get all active species
-router.get('/', async (req, res) => {
-    try {
-        const species = await Species.find({ active: true })
-            .select('name displayName description icon')
-            .sort('displayName');
+// Get all available species from posts
+router.get("/", async (req, res) => {
+  try {
+    const species = await Post.distinct("species", {
+      species: { $exists: true, $ne: "" },
+    });
 
-        res.status(200).json({
-            success: true,
-            species
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error fetching species',
-            error: error.message
-        });
-    }
+    const sortedSpecies = [...new Set(species)]
+      .filter((s) => s && s.trim())
+      .sort((a, b) => a.localeCompare(b));
+
+    res.status(200).json({
+      success: true,
+      species: sortedSpecies,
+    });
+  } catch (error) {
+    console.error("Species fetch error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Unable to fetch species",
+      error: error.message,
+    });
+  }
 });
 
-// Add new species (admin only)
-router.post('/add', async (req, res) => {
-    try {
-        // TODO: Add admin authentication
-        const { name, displayName, description, icon } = req.body;
+// Get species details (including count of breeds and posts)
+// THIS IS LIKELY THE PROBLEMATIC ROUTE - Replace object with proper callback
+router.get("/details", async (req, res) => {
+  try {
+    // Get all species
+    const speciesList = await Post.distinct("species", {
+      species: { $exists: true, $ne: "" },
+    });
 
-        const existingSpecies = await Species.findOne({ name: name.toLowerCase() });
-        if (existingSpecies) {
-            return res.status(400).json({
-                success: false,
-                message: 'Species already exists'
-            });
-        }
-
-        const species = new Species({
-            name,
-            displayName,
-            description,
-            icon
+    // Get counts and details for each species
+    const speciesDetails = await Promise.all(
+      speciesList.map(async (species) => {
+        const postCount = await Post.countDocuments({ species });
+        const breeds = await Post.distinct("category", {
+          species,
+          category: { $exists: true, $ne: "" },
         });
 
-        await species.save();
+        return {
+          name: species,
+          postCount,
+          breedCount: breeds.length,
+          breeds: breeds,
+        };
+      })
+    );
 
-        res.status(201).json({
-            success: true,
-            message: 'Species added successfully',
-            species
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error adding species',
-            error: error.message
-        });
-    }
+    res.status(200).json({
+      success: true,
+      speciesDetails,
+    });
+  } catch (error) {
+    console.error("Species details error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Unable to fetch species details",
+      error: error.message,
+    });
+  }
 });
 
-// Update species (admin only)
-router.put('/update/:id', async (req, res) => {
-    try {
-        // TODO: Add admin authentication
-        const species = await Species.findByIdAndUpdate(
-            req.params.id,
-            { $set: req.body },
-            { new: true }
-        );
+// Get posts by species
+router.get("/:species/posts", async (req, res) => {
+  try {
+    const { species } = req.params;
+    const { limit = 10, page = 1, sort = "createdAt" } = req.query;
 
-        if (!species) {
-            return res.status(404).json({
-                success: false,
-                message: 'Species not found'
-            });
-        }
+    const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        res.status(200).json({
-            success: true,
-            message: 'Species updated successfully',
-            species
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error updating species',
-            error: error.message
-        });
-    }
-});
+    const posts = await Post.find({
+      species: new RegExp("^" + species + "$", "i"),
+    })
+      .sort({ [sort]: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
 
-// Deactivate species (admin only)
-router.put('/deactivate/:id', async (req, res) => {
-    try {
-        // TODO: Add admin authentication
-        const species = await Species.findByIdAndUpdate(
-            req.params.id,
-            { active: false },
-            { new: true }
-        );
+    const total = await Post.countDocuments({
+      species: new RegExp("^" + species + "$", "i"),
+    });
 
-        if (!species) {
-            return res.status(404).json({
-                success: false,
-                message: 'Species not found'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: 'Species deactivated successfully'
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error deactivating species',
-            error: error.message
-        });
-    }
-});
-
-// Increment species popularity
-router.post('/increment-popularity/:id', async (req, res) => {
-    try {
-        const species = await Species.findByIdAndUpdate(
-            req.params.id,
-            { $inc: { popularity: 1 } },
-            { new: true }
-        );
-
-        if (!species) {
-            return res.status(404).json({
-                success: false,
-                message: 'Species not found'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: 'Popularity incremented',
-            popularity: species.popularity
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error updating popularity',
-            error: error.message
-        });
-    }
+    res.status(200).json({
+      success: true,
+      posts,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        pages: Math.ceil(total / parseInt(limit)),
+      },
+    });
+  } catch (error) {
+    console.error("Species posts error:", error);
+    res.status(500).json({
+      success: false,
+      message: `Unable to fetch posts for species: ${req.params.species}`,
+      error: error.message,
+    });
+  }
 });
 
 module.exports = router;

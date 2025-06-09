@@ -1,0 +1,59 @@
+@keyframes slideInMobile {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutMobile {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+}
+
+.mobile-slide-enter {
+  animation: slideInMobile 0.3s ease-out forwards;
+}
+
+.mobile-slide-exit {
+  animation: slideOutMobile 0.3s ease-out forwards;
+}
+
+/* Height-based media queries */
+@media screen and (max-height: 640px) {
+  .twodivtranstation {
+    height: 60px !important;
+  }
+
+  .form-container {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .input-field {
+    margin-bottom: 0.5rem;
+  }
+}
+
+@media screen and (max-height: 480px) {
+  .mobile-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .hide-on-small-height {
+    display: none;
+  }
+}
+
+/* Existing transitions... */

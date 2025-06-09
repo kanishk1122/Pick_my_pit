@@ -73,6 +73,15 @@ const data = [
     ),
     link: "posts",
   },
+  {
+    title: "My Referal",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM8 10a1 1 0 112 0v3a1 1 0 11-2 0V9a1 1 0 011-1h3a1 1 0 110 2H9a1 1 0 01-1-1z" />
+      </svg>
+    ),
+    link: "refer",
+  }
 ];
 
 

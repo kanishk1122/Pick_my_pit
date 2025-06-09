@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
+import axios from "axios";
 import Deafultpage from "../components/Deafultpage";
 import Navbar from "../components/Navbar";
 import Home from "../components/Home.jsx";
@@ -11,9 +12,32 @@ import FreePetList from "../components/Pet/FreePetList.jsx";
 import PaidPetList from "../components/Pet/PaidPetList.jsx";
 import PetViewer from "../components/Pet/PetViewer.jsx";
 import FilteredPetList from "../components/Pet/FilteredPetList.jsx";
-import { useState } from "react";
 
 function App() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    // Fetch user data from backend
+    async function fetchUser() {
+      const response = await axios.get("/api/user");
+      setUser(response.data);
+    }
+    fetchUser();
+  }, []);
+
+  const handlePetInfoAccess = async (petId) => {
+    if (user.coins >= 10) {
+      await axios.post("/api/coins/deduct-coins", {
+        userId: user._id,
+        amount: 10,
+      });
+      // Redirect to pet info page
+      window.location.href = `/pet/${petId}`;
+    } else {
+      alert("Not enough coins to access pet info.");
+    }
+  };
+
   return (
     <Routes>
       {/* Routes with Navbar */}
@@ -26,9 +50,11 @@ function App() {
               <Route className="mt-20" path="/user/*" element={<User />} />
               <Route path="/create-post" element={<CreatePost />} />
               <Route path="/pets" element={<PetList />} />
-              
               <Route path="/pets/filter" element={<FilteredPetList />} />
-              <Route path="/pet/:id" element={<PetViewer />} />
+              <Route
+                path="/pet/:id"
+                element={<PetViewer onAccess={handlePetInfoAccess} />}
+              />
               <Route path="/pets/loving-companions" element={<FreePetList />} />
               <Route path="/pets/companion-pets" element={<PaidPetList />} />
             </Routes>

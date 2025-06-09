@@ -73,48 +73,28 @@ export default function Dashboard() {
   );
 }
 
-export default function StatsCard({ title, value, trend, icon, description }) {
-  const isPositiveTrend = trend?.startsWith('+');
-
+export default function StatsCard({ title, value, trend, description, icon }) {
+  const isTrendPositive = trend?.startsWith('+');
+  
   return (
-    <div className="stats-card group">
+    <div className="bg-zinc-900/30 backdrop-blur-sm border border-zinc-800/50 p-5 rounded-xl hover:bg-zinc-800/30 transition-all duration-200">
       <div className="flex justify-between items-start">
         <div className="space-y-2">
-          <h3 className="stats-value">{value}</h3>
-          <p className="stats-label">{title}</p>
+          <p className="text-zinc-500 text-sm">{title}</p>
+          <p className="text-2xl font-bold text-white">{value}</p>
+          {trend && (
+            <div className="flex items-center gap-1">
+              <span className={`text-xs font-medium ${isTrendPositive ? 'text-emerald-400' : 'text-red-400'}`}>
+                {trend}
+              </span>
+              <span className="text-xs text-zinc-500">{description}</span>
+            </div>
+          )}
         </div>
-        
-        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 
-                        border border-indigo-500/20 flex items-center justify-center
-                        group-hover:scale-110 transition-transform duration-300">
+        <div className="p-2.5 rounded-lg bg-zinc-800/70 border border-zinc-700/50">
           {icon}
         </div>
       </div>
-
-      {(trend || description) && (
-        <div className="flex items-center gap-2 mt-4">
-          {trend && (
-            <span className={`text-sm font-medium flex items-center gap-1
-              ${isPositiveTrend ? 'text-emerald-400' : 'text-red-400'}`}>
-              {isPositiveTrend ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                        d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
-                </svg>
-              )}
-              {trend}
-            </span>
-          )}
-          {description && (
-            <span className="text-sm text-zinc-500">{description}</span>
-          )}
-        </div>
-      )}
     </div>
   );
 }

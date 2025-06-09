@@ -1,60 +1,93 @@
 "use client";
+import { useState, useEffect } from "react";
 
-const BlogsList = () => {
-  const blogs = [
-    {
-      id: 1,
-      title: "Essential Pet Care Tips",
-      author: "Dr. Smith",
-      date: "2024-01-15",
-      status: "published"
-    },
-    {
-      id: 2,
-      title: "Best Dog Breeds for Families",
-      author: "Jane Wilson",
-      date: "2024-01-14",
-      status: "draft"
-    },
-    // Add more blog posts as needed
-  ];
+export default function BlogsList() {
+  const [blogs, setBlogs] = useState([]);
+
+  useEffect(() => {
+    // Mock data - in a real app, you'd fetch this from an API
+    const mockBlogs = [
+      {
+        id: 1,
+        title: "Caring for Senior Pets",
+        author: "Dr. Smith",
+        date: "2024-01-15", // Use ISO format for consistency
+        category: "Pet Health",
+      },
+      {
+        id: 2,
+        title: "Best Toys for Active Dogs",
+        author: "Jane Doe",
+        date: "2024-01-10",
+        category: "Products",
+      },
+      {
+        id: 3,
+        title: "Understanding Cat Behavior",
+        author: "Feline Expert",
+        date: "2024-01-05",
+        category: "Behavior",
+      },
+    ];
+
+    setBlogs(mockBlogs);
+  }, []);
+
+  // Format date consistently for all environments
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    // Use explicit formatting that doesn't depend on locale
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-      <h2 className="text-2xl font-semibold mb-6 text-zinc-100">Blog Posts</h2>
-      <div className="space-y-4">
-        {blogs.map((blog) => (
-          <div 
-            key={blog.id} 
-            className="flex justify-between items-center p-4 bg-zinc-900/50 backdrop-blur-sm rounded-xl border border-zinc-800 hover:bg-zinc-900 transition-all duration-200 shadow-lg"
-          >
-            <div className="space-y-1">
-              <h3 className="font-medium text-lg text-zinc-100">{blog.title}</h3>
-              <div className="flex items-center gap-3 text-sm text-zinc-400">
-                <span>{blog.author}</span>
-                <span>•</span>
-                <span>{new Date(blog.date).toLocaleDateString()}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className={`px-3 py-1 text-xs rounded-full font-medium backdrop-blur-sm ${
-                blog.status === 'published' 
-                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
-                  : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-              }`}>
-                {blog.status.charAt(0).toUpperCase() + blog.status.slice(1)}
+    <div className="space-y-4">
+      {blogs.map((blog) => (
+        <div
+          key={blog.id}
+          className="flex justify-between items-center p-3 bg-zinc-800/50 rounded-lg hover:bg-zinc-800/80 transition-all duration-200"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-medium text-zinc-100">{blog.title}</h3>
+              <span className="px-2 py-0.5 bg-zinc-700 text-xs rounded-full text-zinc-300">
+                {blog.category}
               </span>
-              <button className="p-2 hover:bg-zinc-800 rounded-lg transition-all duration-200">
-                <svg className="w-5 h-5 text-zinc-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15.1l-3.414.586.586-3.414 9.414-9.414z" />
-                </svg>
-              </button>
             </div>
+            <p className="text-xs text-zinc-500">
+              By {blog.author} • {formatDate(blog.date)}
+            </p>
           </div>
-        ))}
-      </div>
+          <button className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-700 rounded-lg transition-all duration-200">
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z"
+              />
+            </svg>
+          </button>
+        </div>
+      ))}
+
+      {blogs.length === 0 && (
+        <div className="text-center py-4 text-zinc-500">
+          No blog posts available.
+        </div>
+      )}
+
+      <button className="w-full mt-4 py-2 text-zinc-400 hover:text-white bg-zinc-800/70 hover:bg-zinc-800 rounded-lg transition-all duration-200 text-sm">
+        View All Posts
+      </button>
     </div>
   );
-};
-
-export default BlogsList;
+}

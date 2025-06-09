@@ -4,7 +4,11 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "seed-admin": "node scripts/seedAdmin.js",
+    "check-deps": "node scripts/check-dependencies.js",
+    "diagnose-admin": "node scripts/diagnoseAdminIssue.js",
+    "dev" : "npx nodemon"
   },
   "keywords": [],
   "author": "",
@@ -24,6 +28,7 @@
     "google-auth-library": "^9.15.0",
     "handlebars": "^4.7.8",
     "joi": "^17.13.3",
+    "jsonwebtoken": "^9.0.0",
     "mongoose": "^8.7.0",
     "morgan": "^1.10.0",
     "nodemailer": "^6.9.15",

@@ -3,16 +3,17 @@ const mongoose = require("mongoose");
 const app = express();
 const userRoutes = require("./routes/users");
 const morgan = require("morgan");
-const postRoutes = require("./routes/post.js")
+const postRoutes = require("./routes/post.js");
 const cors = require("cors");
 const CookieParser = require("cookie-parser");
 const mailer = require("./mailer/mailer");
 const passport = require("passport");
 const session = require("express-session");
-const authRoutes = require("./routes/auth"); 
-const addressRoutes = require('./routes/address');
-const breedRoutes = require('./routes/breed');
-const speciesRoutes = require('./routes/species');
+const authRoutes = require("./routes/auth");
+const addressRoutes = require("./routes/address");
+const breedRoutes = require("./routes/breed");
+const speciesRoutes = require("./routes/species");
+const adminRoutes = require("./routes/admin");
 
 //limit for image and data uplodation
 app.use(express.json({ limit: "2mb" }));
@@ -33,7 +34,7 @@ app.use(CookieParser());
 // MongoDB connection
 mongoose
   .connect(process.env.DATABASE_URL)
-  .then(() => console.log("MongoDB connected" ))
+  .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log(err));
 
 // Middleware for sessions
@@ -61,6 +62,7 @@ app.use("/api/post", postRoutes);
 app.use("/api/address", addressRoutes);
 app.use("/api/breeds", breedRoutes);
 app.use("/api/species", speciesRoutes);
+app.use("/api/admin", adminRoutes);
 
 // Start server
 app.listen(port, () => {

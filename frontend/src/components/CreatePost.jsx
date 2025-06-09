@@ -41,6 +41,8 @@ const CreatePost = () => {
   useEffect(() => {
     if (formData.species) {
       fetchBreeds(formData.species);
+    } else {
+      setBreeds([]);
     }
   }, [formData.species]);
 
@@ -50,6 +52,7 @@ const CreatePost = () => {
 
   const fetchSpecies = async () => {
     try {
+      console.log("this is user from fecth breed " ,user)
       const response = await axios.get(`${POST.GetSpecies}`, {
         headers: {
           Authorization: `Bearer ${user.sessionToken}`,
@@ -69,16 +72,16 @@ const CreatePost = () => {
     }
   };
 
-  const fetchBreeds = async (species) => {
+  const fetchBreeds = async (speciesName) => {
     try {
-      const response = await axios.get(`${POST.GetBreeds}/${species}`, {
+      const response = await axios.get(`${POST.GetBreeds}/${speciesName}`, {
         headers: {
           Authorization: `Bearer ${user.sessionToken}`,
           userid: user.id,
         },
       });
       if (response.data.success) {
-        setBreeds(response.data.breeds);
+        setBreeds(response.data.breeds || []);
       }
     } catch (error) {
       console.error("Error fetching breeds:", error);
@@ -118,6 +121,11 @@ const CreatePost = () => {
     if (name === "species") {
       const selectedSpecies = species.find((s) => s.name === value);
       setSelectedSpecies(selectedSpecies);
+      // Reset breed when changing species
+      setFormData(prev => ({
+        ...prev,
+        breed: "",
+      }));
     }
 
     setFormData((prev) => ({
@@ -141,14 +149,14 @@ const CreatePost = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (!selectedSpecies) {
-        throw new Error("Please select a valid species");
+      if (!formData.species) {
+        throw new Error("Please select a species");
       }
-      if (!formData.species || !formData.breed) {
-        throw new Error("Species and breed are required");
+      if (!formData.breed) {
+        throw new Error("Please select a breed");
       }
-      if (formData.petName.length < 10) {
-        throw new Error("Pet name must be at least 10 characters long");
+      if (formData.petName.length < 3) {
+        throw new Error("Pet name must be at least 3 characters long");
       }
       if (formData.description.length < 20) {
         throw new Error("Description must be at least 20 characters long");
@@ -156,14 +164,17 @@ const CreatePost = () => {
       if (!selectedAddress) {
         throw new Error("Please select an address");
       }
+      if (selectedImages.length === 0) {
+        throw new Error("Please upload at least one image");
+      }
 
       const postData = {
         title: formData.petName,
         discription: formData.description,
-        amount: formData.price,
+        amount: formData.price || 0,
         type: formData.isNegotiable ? "paid" : "free",
         category: formData.breed,
-        species: selectedSpecies.name,
+        species: formData.species,
         userId: user.id,
         addressId: selectedAddress._id,
         images: selectedImages,
@@ -184,6 +195,28 @@ const CreatePost = () => {
           text: "Your pet listing has been created successfully.",
         });
         // Reset form or redirect to the new post
+        setFormData({
+          petName: "",
+          species: "",
+          breed: "",
+          age: "",
+          description: "",
+          price: "",
+          isNegotiable: false,
+          useUserAddress: true,
+          address: {
+            country: "",
+            city: "",
+            zip: "",
+            district: "",
+            street: "",
+            building: "",
+            floor: "",
+            location: "",
+          },
+        });
+        setSelectedImages([]);
+        setSelectedAddress(null);
       }
     } catch (error) {
       console.error("Error creating post:", error);
@@ -217,11 +250,38 @@ const CreatePost = () => {
           <option value="">Select Species</option>
           {species.map((item) => (
             <option key={item._id} value={item.name}>
-              {item.name}
+              {item.displayName || item.name}
             </option>
           ))}
         </select>
       </motion.div>
+
+      {formData.species && (
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 300 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Breed
+          </label>
+          <select
+            name="breed"
+            value={formData.breed}
+            onChange={handleInputChange}
+            className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
+            required
+          >
+            <option value="">Select Breed</option>
+            {breeds.map((breed, index) => (
+              <option key={index} value={breed}>
+                {breed}
+              </option>
+            ))}
+          </select>
+        </motion.div>
+      )}
     </div>
   );
 
@@ -232,7 +292,7 @@ const CreatePost = () => {
       transition={{ duration: 0.5 }}
       className="min-h-screen pt-24 px-4 mb-10 bg-gradient-to-br from-green-50 to-emerald-100 border-t-2 border-black rounded-t-2xl"
     >
-      <div className="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-8">
+      <div className="w-full bg-white rounded-t-3xl shadow-xl shadow-b-none p-8">
         <h1 className="text-4xl font-bold text-center bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent mb-8">
           Create New Pet Listing
         </h1>
@@ -312,8 +372,7 @@ const CreatePost = () => {
           {/* Pet Details Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300 }}
+              
             >
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Pet Name
@@ -328,8 +387,7 @@ const CreatePost = () => {
             </motion.div>
             {speciesAndBreedSection}
             <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300 }}
+              
             >
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Age
@@ -344,8 +402,7 @@ const CreatePost = () => {
               />
             </motion.div>
             <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300 }}
+              
               className="md:col-span-2"
             >
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -361,8 +418,7 @@ const CreatePost = () => {
               ></textarea>
             </motion.div>
             <motion.div
-              whileHover={{ scale: 1.02 }}
-              transition={{ type: "spring", stiffness: 300 }}
+              
             >
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Price (₹)
@@ -456,7 +512,7 @@ const CreatePost = () => {
               type="submit"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="brand-button px-8 py-3 text-white rounded-full hover:shadow-lg transition-all duration-300"
+              className="brand-button px-3 bg-green-500 "
             >
               Create Listing
             </motion.button>
