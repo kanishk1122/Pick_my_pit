@@ -1,144 +1,144 @@
-const { default: mongoose } = require("mongoose");
-const AddressSchema = require("./Address.js");
+const mongoose = require("mongoose");
 
-const PostSchema = mongoose.Schema(
+// Helper function to generate slug
+function slugify(text) {
+  if (!text) return "";
+
+  return text
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-") // Replace spaces with -
+    .replace(/[^\w\-]+/g, "") // Remove all non-word chars
+    .replace(/\-\-+/g, "-") // Replace multiple - with single -
+    .replace(/^-+/, "") // Trim - from start of text
+    .replace(/-+$/, ""); // Trim - from end of text
+}
+
+// Create the Post schema
+const PostSchema = new mongoose.Schema(
   {
     owner: {
       type: mongoose.Schema.Types.ObjectId,
-      require: true,
+      ref: "User",
+      required: true,
     },
     images: {
       type: Array,
       default: [],
     },
-    title: String,
+    title: {
+      type: String,
+      required: true,
+    },
+    slug: {
+      type: String,
+      index: true,
+    },
     discription: String,
     date: {
       type: Date,
-      default: Date.now(),
+      default: Date.now,
     },
-    // Enhanced age fields with validation
+    amount: {
+      type: Number,
+      default: 0,
+    },
+    type: {
+      type: String,
+      enum: ["free", "paid"],
+      default: "free",
+    },
+    category: String,
+    species: String,
+    speciesSlug: {
+      type: String,
+      lowercase: true,
+    },
+    breedSlug: {
+      type: String,
+      lowercase: true,
+    },
+    address: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Address",
+    },
     age: {
-      value: {
-        type: Number,
-        min: 0,
-      },
+      value: Number,
       unit: {
         type: String,
         enum: ["days", "weeks", "months", "years"],
         default: "months",
       },
     },
-    type: {
-      type: String,
-      enum: ["free", "paid"],
-      default: "free",
-      index: true, // Add index for better query performance
-    },
-    address: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Address",
-    },
-    category: {
-      type: String,
-      trim: true,
-      index: true,
-    },
-    species: {
-      type: String,
-      trim: true,
-      lowercase: true, // Store in lowercase for consistent querying
-      index: true,
-    },
-    breed: {
-      type: String,
-      required: false,
-      trim: true,
-      lowercase: true, // Store in lowercase for consistent querying
-      index: true,
-    },
     status: {
       type: String,
-      default: "pending",
-    },
-    amount: {
-      type: Number,
-      min: 0,
-      default: 0,
-      index: true, // Add index for price range queries
+      enum: ["available", "sold", "adopted", "pending"],
+      default: "available",
     },
   },
   {
+    timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
 );
 
-// Add a virtual property for formatted age
-PostSchema.virtual("formattedAge").get(function () {
-  if (!this.age || !this.age.value) return "";
-
-  // Normalize the age to the most appropriate unit
-  const normalized = normalizeAge(this.age.value, this.age.unit);
-  return `${normalized.value} ${normalized.unit}`;
-});
-
-// Pre-save middleware to normalize age before saving
+// Generate slug before saving
 PostSchema.pre("save", function (next) {
-  if (this.isModified("age") && this.age && this.age.value) {
-    const normalized = normalizeAge(this.age.value, this.age.unit);
-    this.age = normalized;
+  // Create slug if not exists or title changed
+  if (!this.slug || this.isModified("title")) {
+    // Generate base slug from title
+    const baseSlug = slugify(this.title || "pet-post");
+
+    // Add a unique timestamp to avoid collisions
+    const timestamp = new Date().getTime().toString().slice(-6);
+    this.slug = `${baseSlug}-${timestamp}`;
   }
 
-  // If category is set but breed isn't, copy category to breed for backward compatibility
-  if (this.isModified("category") && this.category && !this.breed) {
-    this.breed = this.category;
+  // Generate species slug if missing
+  if (this.species && !this.speciesSlug) {
+    this.speciesSlug = slugify(this.species);
+  }
+
+  // Generate breed/category slug if missing
+  if (this.category && !this.breedSlug) {
+    this.breedSlug = slugify(this.category);
   }
 
   next();
 });
 
-// Helper function to normalize age to the most appropriate unit
-function normalizeAge(value, unit) {
-  // Convert all to days first for easy calculation
-  let days;
-  switch (unit) {
-    case "days":
-      days = value;
-      break;
-    case "weeks":
-      days = value * 7;
-      break;
-    case "months":
-      days = value * 30; // Approximate
-      break;
-    case "years":
-      days = value * 365; // Approximate
-      break;
-    default:
-      return { value, unit };
-  }
+// Virtual for formatted age
+PostSchema.virtual("formattedAge").get(function () {
+  if (!this.age || !this.age.value) return "";
 
-  // Convert to the most appropriate unit
-  if (days < 7) {
-    return { value: days, unit: "days" };
-  } else if (days < 30) {
-    // Convert days to weeks if it makes a clean number
-    const weeks = Math.round(days / 7);
-    return { value: weeks, unit: "weeks" };
-  } else if (days < 365) {
-    const months = Math.round(days / 30);
-    return { value: months, unit: "months" };
-  } else {
-    const years = Math.round((days / 365) * 10) / 10; // Round to 1 decimal place
-    return { value: years, unit: "years" };
-  }
-}
+  const { value, unit } = this.age;
+  const unitStr = value === 1 ? unit.slice(0, -1) : unit;
+  return `${value} ${unitStr} old`;
+});
 
-// Add compound indexes for common filter combinations
-PostSchema.index({ species: 1, category: 1 }); // category is now used as breed
-PostSchema.index({ type: 1, amount: 1 });
-PostSchema.index({ category: 1, type: 1 });
+// Create indexes for efficient querying
+PostSchema.index({ species: 1 });
+PostSchema.index({ category: 1 });
+PostSchema.index({ type: 1 });
+PostSchema.index({ slug: 1 }, { unique: true });
+
+// Static method to find by slug
+PostSchema.statics.findBySlug = function (slug) {
+  return this.findOne({ slug: slug.toLowerCase() })
+    .populate("owner", "firstname lastname userpic")
+    .populate("address");
+};
+
+// Age formatting helper (static method)
+PostSchema.statics.formatAge = function (age) {
+  if (!age || !age.value) return "";
+
+  const { value, unit } = age;
+  const unitStr = value === 1 ? unit.slice(0, -1) : unit;
+  return `${value} ${unitStr} old`;
+};
 
 const Post = mongoose.model("Post", PostSchema);
 
