@@ -1,45 +1,16 @@
 const express = require("express");
 const router = express.Router();
-const Post = require("../model/Post");
+const breedsController = require("../controllers/BreedsController");
 
-// Get breeds by species from existing posts
-router.get("/:species", async (req, res) => {
-  try {
-    const { species } = req.params;
+// Get all breeds
+router.get("/", breedsController.getAllBreeds);
 
-    if (!species) {
-      return res.status(400).json({
-        success: false,
-        message: "Species parameter is required",
-      });
-    }
+// Get breeds by species
+router.get("/:species", breedsController.getBreedsBySpecies);
 
-    // Get unique breeds from category field where species matches
-    const breeds = await Post.distinct("category", {
-      species: new RegExp("^" + species + "$", "i"),
-      category: { $exists: true, $ne: "" },
-    });
+// Get specific breed by ID
+router.get("/detail/:id", breedsController.getBreedById);
 
-    // Sort and clean up breeds
-    const sortedBreeds = [...new Set(breeds)]
-      .filter((breed) => breed && breed.trim())
-      .sort((a, b) => a.localeCompare(b));
-
-    console.log(`Found ${sortedBreeds.length} breeds for species: ${species}`);
-
-    res.status(200).json({
-      success: true,
-      breeds: sortedBreeds,
-    });
-  } catch (error) {
-    console.error("Breeds fetch error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Unable to fetch breeds",
-      error: error.message,
-    });
-  }
-});
 
 // The problem is likely around line 49 - remove or fix any invalid route definition
 // For example, if you have something like:

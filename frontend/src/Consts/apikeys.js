@@ -37,4 +37,5 @@ export const POST = {
   Breeds: `${baseurl}post/breeds`,
   GetSpecies: `${baseurl}species`,
   GetBreeds: `${baseurl}breeds`,
+  SpeciesHierarchy: `${baseurl}species/hierarchy`,
 };

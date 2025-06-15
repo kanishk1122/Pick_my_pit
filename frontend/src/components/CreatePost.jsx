@@ -14,11 +14,14 @@ const CreatePost = () => {
   const [breeds, setBreeds] = useState([]);
   const [species, setSpecies] = useState([]);
   const [selectedSpecies, setSelectedSpecies] = useState(null);
+  const [isLoadingSpecies, setIsLoadingSpecies] = useState(false);
+  const [isLoadingBreeds, setIsLoadingBreeds] = useState(false);
   const [formData, setFormData] = useState({
     petName: "",
     species: "",
     breed: "",
-    age: "",
+    ageValue: "",
+    ageUnit: "months",
     description: "",
     price: "",
     isNegotiable: false,
@@ -37,30 +40,82 @@ const CreatePost = () => {
 
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
+  const [speciesHierarchy, setSpeciesHierarchy] = useState([]);
+  const [availableBreeds, setAvailableBreeds] = useState([]);
+
+  useEffect(() => {
+    fetchSpeciesHierarchy();
+  }, []);
 
   useEffect(() => {
     if (formData.species) {
-      fetchBreeds(formData.species);
+      // Find the selected species in the hierarchy
+      const selectedSpeciesData = speciesHierarchy.find(
+        (s) => s.name === formData.species
+      );
+
+      if (selectedSpeciesData && selectedSpeciesData.breeds) {
+        // Use the breeds directly from the hierarchy
+        setAvailableBreeds(selectedSpeciesData.breeds);
+        setIsLoadingBreeds(false);
+      } else {
+        // Fallback to traditional API call
+        fetchBreeds(formData.species);
+      }
     } else {
-      setBreeds([]);
+      setAvailableBreeds([]);
     }
-  }, [formData.species]);
+  }, [formData.species, speciesHierarchy]);
 
-  useEffect(() => {
-    fetchSpecies();
-  }, []);
-
-  const fetchSpecies = async () => {
+  const fetchSpeciesHierarchy = async () => {
+    setIsLoadingSpecies(true);
     try {
-      console.log("this is user from fecth breed " ,user)
-      const response = await axios.get(`${POST.GetSpecies}`, {
+      console.log("Fetching species hierarchy...");
+      const response = await axios.get(`${POST.GetSpecies}/hierarchy`, {
         headers: {
-          Authorization: `Bearer ${user.sessionToken}`,
-          userid: user.id,
+          Authorization: `Bearer ${user?.sessionToken || ""}`,
+          userid: user?.id || "",
         },
       });
+
       if (response.data.success) {
+        console.log("Species hierarchy received:", response.data.hierarchy);
+        setSpeciesHierarchy(response.data.hierarchy);
+        setSpecies(response.data.hierarchy);
+      } else {
+        console.warn(
+          "Species hierarchy fetch returned success:false",
+          response.data
+        );
+        // Fallback to traditional method
+        fetchSpecies();
+      }
+    } catch (error) {
+      console.error("Error fetching species hierarchy:", error);
+      // Fallback to traditional method
+      fetchSpecies();
+    } finally {
+      setIsLoadingSpecies(false);
+    }
+  };
+
+  // Keep the original method as fallback
+  const fetchSpecies = async () => {
+    setIsLoadingSpecies(true);
+    try {
+      console.log("Fetching species data...");
+      const response = await axios.get(`${POST.GetSpecies}`, {
+        headers: {
+          Authorization: `Bearer ${user?.sessionToken || ""}`,
+          userid: user?.id || "",
+        },
+      });
+
+      if (response.data.success) {
+        console.log("Species data received:", response.data.species);
         setSpecies(response.data.species);
+      } else {
+        console.warn("Species fetch returned success:false", response.data);
       }
     } catch (error) {
       console.error("Error fetching species:", error);
@@ -69,27 +124,41 @@ const CreatePost = () => {
         title: "Oops...",
         text: "Failed to fetch species. Please try again.",
       });
+    } finally {
+      setIsLoadingSpecies(false);
     }
   };
 
   const fetchBreeds = async (speciesName) => {
+    if (!speciesName) return;
+
+    setIsLoadingBreeds(true);
     try {
+      console.log(`Fetching breeds for species: ${speciesName}`);
       const response = await axios.get(`${POST.GetBreeds}/${speciesName}`, {
         headers: {
-          Authorization: `Bearer ${user.sessionToken}`,
-          userid: user.id,
+          Authorization: `Bearer ${user?.sessionToken || ""}`,
+          userid: user?.id || "",
         },
       });
+
       if (response.data.success) {
+        console.log("Breeds data received:", response.data.breeds);
         setBreeds(response.data.breeds || []);
+      } else {
+        console.warn("Breeds fetch returned success:false", response.data);
+        setBreeds([]);
       }
     } catch (error) {
       console.error("Error fetching breeds:", error);
+      setBreeds([]);
       Swal.fire({
         icon: "error",
         title: "Oops...",
         text: "Failed to fetch breeds. Please try again.",
       });
+    } finally {
+      setIsLoadingBreeds(false);
     }
   };
 
@@ -122,7 +191,7 @@ const CreatePost = () => {
       const selectedSpecies = species.find((s) => s.name === value);
       setSelectedSpecies(selectedSpecies);
       // Reset breed when changing species
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         breed: "",
       }));
@@ -168,6 +237,14 @@ const CreatePost = () => {
         throw new Error("Please upload at least one image");
       }
 
+      // Validate age value if provided
+      if (
+        formData.ageValue &&
+        (isNaN(formData.ageValue) || formData.ageValue < 0)
+      ) {
+        throw new Error("Age must be a positive number");
+      }
+
       const postData = {
         title: formData.petName,
         discription: formData.description,
@@ -178,7 +255,15 @@ const CreatePost = () => {
         userId: user.id,
         addressId: selectedAddress._id,
         images: selectedImages,
+        age: formData.ageValue
+          ? {
+              value: Number(formData.ageValue),
+              unit: formData.ageUnit,
+            }
+          : undefined,
       };
+
+      console.log("Submitting post data:", postData);
 
       const response = await axios.post(POST.Create, postData, {
         headers: {
@@ -199,7 +284,8 @@ const CreatePost = () => {
           petName: "",
           species: "",
           breed: "",
-          age: "",
+          ageValue: "",
+          ageUnit: "months",
           description: "",
           price: "",
           isNegotiable: false,
@@ -231,6 +317,43 @@ const CreatePost = () => {
     }
   };
 
+  // Age input section
+  const ageInputSection = (
+    <div className="grid grid-cols-2 gap-4">
+      <motion.div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Age Value
+        </label>
+        <input
+          type="number"
+          name="ageValue"
+          value={formData.ageValue}
+          onChange={handleInputChange}
+          min="0"
+          placeholder="Enter age number"
+          className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
+        />
+      </motion.div>
+      <motion.div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Age Unit
+        </label>
+        <select
+          name="ageUnit"
+          value={formData.ageUnit}
+          onChange={handleInputChange}
+          className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
+        >
+          <option value="days">Days</option>
+          <option value="weeks">Weeks</option>
+          <option value="months">Months</option>
+          <option value="years">Years</option>
+        </select>
+      </motion.div>
+    </div>
+  );
+
+  // Updated species and breed selection section
   const speciesAndBreedSection = (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
       <motion.div
@@ -246,42 +369,58 @@ const CreatePost = () => {
           onChange={handleInputChange}
           className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
           required
+          disabled={isLoadingSpecies}
         >
           <option value="">Select Species</option>
           {species.map((item) => (
-            <option key={item._id} value={item.name}>
+            <option key={item._id || item.name} value={item.name}>
+              {item.icon && `${item.icon} `}
               {item.displayName || item.name}
             </option>
           ))}
         </select>
+        {isLoadingSpecies && (
+          <div className="mt-1 text-sm text-gray-500">Loading species...</div>
+        )}
       </motion.div>
 
-      {formData.species && (
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          transition={{ type: "spring", stiffness: 300 }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+      <motion.div
+        whileHover={{ scale: 1.02 }}
+        transition={{ type: "spring", stiffness: 300 }}
+        initial={{ opacity: formData.species ? 1 : 0 }}
+        animate={{ opacity: formData.species ? 1 : 0 }}
+        className={!formData.species ? "hidden" : ""}
+      >
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Breed
+        </label>
+        <select
+          name="breed"
+          value={formData.breed}
+          onChange={handleInputChange}
+          className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
+          required
+          disabled={isLoadingBreeds || !formData.species}
         >
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Breed
-          </label>
-          <select
-            name="breed"
-            value={formData.breed}
-            onChange={handleInputChange}
-            className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
-            required
-          >
-            <option value="">Select Breed</option>
-            {breeds.map((breed, index) => (
-              <option key={index} value={breed}>
-                {breed}
-              </option>
-            ))}
-          </select>
-        </motion.div>
-      )}
+          <option value="">Select Breed</option>
+          {availableBreeds.map((breed) => (
+            <option key={breed._id || breed.name} value={breed.name}>
+              {breed.name.charAt(0).toUpperCase() + breed.name.slice(1)}
+            </option>
+          ))}
+        </select>
+        {isLoadingBreeds && (
+          <div className="mt-1 text-sm text-gray-500">Loading breeds...</div>
+        )}
+        {availableBreeds.length === 0 &&
+          formData.species &&
+          !isLoadingBreeds && (
+            <div className="mt-1 text-sm text-amber-600">
+              No breeds found for this species. You can still continue with a
+              custom breed.
+            </div>
+          )}
+      </motion.div>
     </div>
   );
 
@@ -371,9 +510,7 @@ const CreatePost = () => {
 
           {/* Pet Details Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <motion.div
-              
-            >
+            <motion.div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Pet Name
               </label>
@@ -385,41 +522,35 @@ const CreatePost = () => {
                 className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
               />
             </motion.div>
-            {speciesAndBreedSection}
-            <motion.div
-              
-            >
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Age
-              </label>
-              <input
-                type="text"
-                name="age"
-                value={formData.age}
-                onChange={handleInputChange}
-                placeholder="e.g., 2 years, 6 months"
-                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
-              />
-            </motion.div>
-            <motion.div
-              
-              className="md:col-span-2"
-            >
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Description
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                rows="6"
-                className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
-                placeholder="Tell us about your pet's personality, habits, and any special needs..."
-              ></textarea>
-            </motion.div>
-            <motion.div
-              
-            >
+          </div>
+
+          {/* Species and Breed Selection */}
+          {speciesAndBreedSection}
+
+          {/* Age Section - New Structured Format */}
+          <div className="mb-8">
+            <h3 className="text-lg font-medium mb-4 text-gray-700">Pet Age</h3>
+            {ageInputSection}
+          </div>
+
+          {/* Description */}
+          <motion.div className="mb-8">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description
+            </label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              rows="6"
+              className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
+              placeholder="Tell us about your pet's personality, habits, and any special needs..."
+            ></textarea>
+          </motion.div>
+
+          {/* Price Section */}
+          <div className="mb-8">
+            <motion.div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Price (₹)
               </label>
@@ -431,23 +562,23 @@ const CreatePost = () => {
                 className="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-green-400 focus:border-emerald-300 transition-all duration-300"
               />
             </motion.div>
-          </div>
 
-          {/* Negotiable Option */}
-          <div className="mb-8">
-            <label className="flex items-center space-x-3 py-2 cursor-pointer">
-              <input
-                type="checkbox"
-                name="isNegotiable"
-                checked={formData.isNegotiable}
-                onChange={handleInputChange}
-                className="sr-only peer"
-              />
-              <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
-              <span className="ms-3 text-sm font-medium text-gray-700">
-                Price is negotiable
-              </span>
-            </label>
+            {/* Negotiable Option */}
+            <div className="mt-4">
+              <label className="flex items-center space-x-3 py-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="isNegotiable"
+                  checked={formData.isNegotiable}
+                  onChange={handleInputChange}
+                  className="sr-only peer"
+                />
+                <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-500"></div>
+                <span className="ms-3 text-sm font-medium text-gray-700">
+                  Price is negotiable
+                </span>
+              </label>
+            </div>
           </div>
 
           {/* Address Section */}

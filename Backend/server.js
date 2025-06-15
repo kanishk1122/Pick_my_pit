@@ -25,6 +25,12 @@ require("dotenv").config();
 // Access environment variables using process.env
 const port = process.env.PORT || 5000;
 
+app.use((res = {}, req, next) => {  
+  
+  console.log(`API requested: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 // Middleware to parse JSON
 app.use(express.json());
 // app.use(morgan("Tokens"));

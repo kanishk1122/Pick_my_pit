@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const User = require("../model/User");
 const Post = require("../model/Post");
+const Breed = require("../model/breed");
+const { normalizeAge, formatAge } = require("../utils/ageHelper");
 const {
   post_validation,
   post_update_validation,
@@ -11,14 +13,16 @@ const { decrepter } = require("../helper/Functions.js");
 const Route = require("express/lib/router/route.js");
 const mongoose = require("mongoose");
 const { checkSessionId } = require("../helper/Functions.js");
-const cloudinary = require("cloudinary").v2;
+const { cloudinary, isConfigured } = require("../utils/cloudinaryConfig");
+const fs = require("fs").promises;
+const path = require("path");
 
-// Cloudinary configuration
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+// Check Cloudinary configuration at startup
+if (!isConfigured) {
+  console.warn(
+    "⚠️ Cloudinary is not properly configured. Image uploads may fail."
+  );
+}
 
 // Add middleware to check session for all routes
 router.use(async (req, res, next) => {
@@ -59,7 +63,10 @@ router.post("/create", async (req, res) => {
       userId,
       addressId,
       images,
+      age, // Age object containing value and unit
     } = value;
+
+    console.log(`API requested: ${userId} ${addressId}`);
 
     const user = await User.findById(userId);
     if (!user) {
@@ -68,17 +75,42 @@ router.post("/create", async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    // Upload images to Cloudinary
-    const imageUploadPromises = images.map((image) =>
-      cloudinary.uploader.upload(image, {
-        folder: "pet_posts",
-        resource_type: "auto",
-      })
-    );
-    const uploadedImages = await Promise.all(imageUploadPromises);
-    const imageUrls = uploadedImages.map((image) => image.secure_url);
+    // Process and store images
+    let imageUrls = [];
 
-    const post = new Post({
+    if (images && images.length > 0) {
+      try {
+        // Check if Cloudinary is properly configured
+        if (isConfigured) {
+          console.log(`Uploading ${images.length} images to Cloudinary...`);
+          // Upload images to Cloudinary
+          const imageUploadPromises = images.map((image) =>
+            cloudinary.uploader.upload(image, {
+              folder: "pet_posts",
+              resource_type: "auto",
+            })
+          );
+
+          const uploadedImages = await Promise.all(imageUploadPromises);
+          imageUrls = uploadedImages.map((image) => image.secure_url);
+          console.log("Images uploaded successfully to Cloudinary");
+        } else {
+          // Fallback: Use base64 images directly
+          console.warn("Cloudinary not configured. Using image data directly.");
+          imageUrls = images.slice(0, 5); // Limit to 5 images
+        }
+      } catch (uploadError) {
+        console.error("Image upload error:", uploadError);
+
+        // Fallback: Still create the post without images
+        console.warn(
+          "Continuing post creation without images due to upload error"
+        );
+        imageUrls = [];
+      }
+    }
+
+    const postData = {
       owner: user._id,
       title,
       discription,
@@ -88,8 +120,21 @@ router.post("/create", async (req, res) => {
       species,
       address: addressId,
       images: imageUrls,
-    });
+    };
 
+    // Process and normalize the age if provided
+    if (age && age.value) {
+      // Normalize the age to the most appropriate unit
+      try {
+        const normalizedAge = normalizeAge(age.value, age.unit);
+        postData.age = normalizedAge;
+      } catch (ageError) {
+        console.warn("Error normalizing age:", ageError);
+        postData.age = age; // Use original age value
+      }
+    }
+
+    const post = new Post(postData);
     const savedPost = await post.save();
 
     // Initialize posts array if it doesn't exist
@@ -99,10 +144,23 @@ router.post("/create", async (req, res) => {
     user.posts.push(savedPost._id);
     await user.save();
 
+    // Get formatted age for response
+    let formattedAgeText = "";
+    if (savedPost.age && savedPost.age.value) {
+      try {
+        formattedAgeText = formatAge(savedPost.age);
+      } catch (formatError) {
+        formattedAgeText = `${savedPost.age.value} ${savedPost.age.unit}`;
+      }
+    }
+
     res.status(201).json({
       success: true,
       message: "Post created successfully",
-      post: savedPost,
+      post: {
+        ...savedPost.toObject(),
+        formattedAge: formattedAgeText,
+      },
     });
   } catch (error) {
     console.error("Post creation error:", error);
@@ -127,11 +185,20 @@ router.get("/all", async (req, res) => {
       .skip(skip)
       .limit(limit);
 
+    // Add formatted ages to the response
+    const postsWithFormattedAge = posts.map((post) => {
+      const postObj = post.toObject();
+      if (post.age && post.age.value) {
+        postObj.formattedAge = formatAge(post.age);
+      }
+      return postObj;
+    });
+
     const total = await Post.countDocuments();
 
     res.status(200).json({
       success: true,
-      posts,
+      posts: postsWithFormattedAge,
       currentPage: page,
       totalPages: Math.ceil(total / limit),
       totalPosts: total,
@@ -148,7 +215,7 @@ router.get("/all", async (req, res) => {
 // Get all posts with filtering
 router.get("/filter", async (req, res) => {
   try {
-    console.log('Received filter query:', req.query);
+    console.log("Received filter query:", req.query);
     let {
       species,
       breed,
@@ -156,7 +223,7 @@ router.get("/filter", async (req, res) => {
       minPrice,
       maxPrice,
       page = 1,
-      limit = 10
+      limit = 10,
     } = req.query;
 
     page = parseInt(page);
@@ -165,17 +232,17 @@ router.get("/filter", async (req, res) => {
 
     let query = {};
 
-    if (species) query.species = new RegExp('^' + species.trim() + '$', 'i');
-    if (breed) query.category = new RegExp('^' + breed.trim() + '$', 'i');
+    if (species) query.species = new RegExp("^" + species.trim() + "$", "i");
+    if (breed) query.category = new RegExp("^" + breed.trim() + "$", "i");
     if (type) query.type = type;
 
-    if (type === 'paid' && (minPrice || maxPrice)) {
+    if (type === "paid" && (minPrice || maxPrice)) {
       query.amount = {};
       if (minPrice) query.amount.$gte = parseFloat(minPrice);
       if (maxPrice) query.amount.$lte = parseFloat(maxPrice);
     }
 
-    console.log('MongoDB query:', JSON.stringify(query, null, 2));
+    console.log("MongoDB query:", JSON.stringify(query, null, 2));
 
     const posts = await Post.find(query)
       .populate("owner", "firstname lastname userpic")
@@ -195,16 +262,15 @@ router.get("/filter", async (req, res) => {
       currentPage: page,
       totalPages: Math.ceil(total / limit),
       totalPosts: total,
-      filters: { species, breed, type, minPrice, maxPrice }
+      filters: { species, breed, type, minPrice, maxPrice },
     });
-
   } catch (error) {
-    console.error('Filter error:', error);
+    console.error("Filter error:", error);
     res.status(500).json({
       success: false,
       message: "Unable to fetch posts",
       error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 });
@@ -216,13 +282,13 @@ router.get("/free", async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const posts = await Post.find({ type: 'free' })
+    const posts = await Post.find({ type: "free" })
       .populate("owner", "firstname lastname userpic")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await Post.countDocuments({ type: 'free' });
+    const total = await Post.countDocuments({ type: "free" });
 
     res.status(200).json({
       success: true,
@@ -247,13 +313,13 @@ router.get("/paid", async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const posts = await Post.find({ type: 'paid' })
+    const posts = await Post.find({ type: "paid" })
       .populate("owner", "firstname lastname userpic")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await Post.countDocuments({ type: 'paid' });
+    const total = await Post.countDocuments({ type: "paid" });
 
     res.status(200).json({
       success: true,
@@ -275,22 +341,22 @@ router.get("/paid", async (req, res) => {
 router.get("/breeds/:species", async (req, res) => {
   try {
     const { species } = req.params;
-    const breeds = await Breed.find({ 
-      species: new RegExp('^' + species + '$', 'i') 
+    const breeds = await Breed.find({
+      species: new RegExp("^" + species + "$", "i"),
     })
-    .select('name')
-    .sort('name');
-    
+      .select("name")
+      .sort("name");
+
     res.status(200).json({
       success: true,
-      breeds: breeds.map(breed => breed.name)
+      breeds: breeds.map((breed) => breed.name),
     });
   } catch (error) {
-    console.error('Breeds fetch error:', error);
+    console.error("Breeds fetch error:", error);
     res.status(500).json({
       success: false,
       message: "Unable to fetch breeds",
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -376,12 +442,10 @@ router.put("/update/:id", async (req, res) => {
 
     // Check if the user is the owner of the post
     if (post.owner.toString() !== userId) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Not authorized to update this post",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this post",
+      });
     }
 
     const updatedPost = await Post.findByIdAndUpdate(
@@ -436,12 +500,10 @@ router.delete("/delete/:id", async (req, res) => {
 
     // Check if the user is the owner of the post
     if (post.owner.toString() !== userId) {
-      return res
-        .status(403)
-        .json({
-          success: false,
-          message: "Not authorized to delete this post",
-        });
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to delete this post",
+      });
     }
 
     await Post.findByIdAndDelete(postId);
@@ -478,7 +540,9 @@ router.post("/purchase/:id", async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // Add the pet to user's purchasedPets
@@ -486,20 +550,20 @@ router.post("/purchase/:id", async (req, res) => {
     await user.save();
 
     // Update the post to mark it as sold
-    post.status = 'sold';
+    post.status = "sold";
     await post.save();
 
     res.status(200).json({
       success: true,
       message: "Pet purchased successfully",
-      post: post
+      post: post,
     });
   } catch (error) {
     console.error("Purchase error:", error);
     res.status(500).json({
       success: false,
       message: "Unable to complete purchase",
-      error: error.message
+      error: error.message,
     });
   }
 });

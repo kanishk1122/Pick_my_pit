@@ -7,7 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed-admin": "node scripts/seedAdmin.js",
     "check-deps": "node scripts/check-dependencies.js",
-    "diagnose-admin": "node scripts/diagnoseAdminIssue.js",
+    "diagnose-admin": "node src/scripts/diagnoseAdminIssue.js",
+    "seed-bread" : "node src/scripts/seedBreeds.js",
     "dev" : "npx nodemon"
   },
   "keywords": [],

@@ -14,20 +14,21 @@ const login_auth = Joi.object({
   password: Joi.string().max(20).required(),
 });
 
+// Update the post_validation schema to validate the age structure
 const post_validation = Joi.object({
-  title: Joi.string().required(),
-  discription: Joi.string().required(),
+  title: Joi.string().required().min(3).max(100),
+  discription: Joi.string().required().min(20),
+  amount: Joi.number().min(0).default(0),
   type: Joi.string().valid("free", "paid").default("free"),
-  amount: Joi.number().when("type", {
-    is: "paid",
-    then: Joi.required(),
-    otherwise: Joi.optional(),
-  }),
   category: Joi.string().required(),
   species: Joi.string().required(),
   userId: Joi.string().required(),
   addressId: Joi.string().required(),
-  images: Joi.array().items(Joi.string().dataUri()).max(5),
+  images: Joi.array().items(Joi.string()).required(),
+  age: Joi.object({
+    value: Joi.number().min(0).required(),
+    unit: Joi.string().valid("days", "weeks", "months", "years").required(),
+  }).optional(),
 });
 
 const post_update_validation = Joi.object({
