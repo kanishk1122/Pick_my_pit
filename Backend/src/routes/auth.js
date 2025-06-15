@@ -1,118 +1,12 @@
 const express = require("express");
-const { OAuth2Client } = require("google-auth-library");
-const CryptoJS = require("crypto-js");
-const uuidv4 = require("uuid").v4;
-const User = require("../model/User.js"); // Adjust to your actual User model path
-const axios = require("axios");
-require("dotenv").config();
+const AuthController = require("../controllers/AuthController");
 
 const router = express.Router();
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Google Auth Route
-router.post("/google-auth", async (req, res) => {
-  try {
-    const { token, referralCode } = req.body;
+router.post("/google-auth", AuthController.googleAuth);
 
-    console.log(token.split(".").length);
-
-    // Verify the Google Token
-    const googleResponse = await axios.get(
-      "https://www.googleapis.com/oauth2/v2/userinfo",
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    const { email, name, picture, given_name, family_name } =
-      googleResponse.data;
-
-    // Check if user exists in the database
-    let user = await User.findOne({ email });
-
-    let isNewUser = false;
-
-    console.log(given_name, family_name);
-
-    if (!user) {
-      // Create new user (sign-up flow)
-      user = new User({
-        firstname: given_name,
-        lastname: family_name || "",
-        email,
-        userpic: picture,
-        emailConfirm: true,
-        referralCode: uuidv4(), // Generate a unique referral code
-      });
-
-      if (referralCode) {
-        const referrer = await User.findOne({ referralCode });
-        if (referrer) {
-          user.referredBy = referrer._id;
-          referrer.coins += 50; // Add 50 coins to referrer
-          await referrer.save();
-        }
-      }
-
-      await user.save();
-
-      isNewUser = true;
-    } else if (referralCode && !user.referredBy) {
-      // Handle referral for existing Google Auth users
-      const referrer = await User.findOne({ referralCode });
-      if (referrer) {
-        user.referredBy = referrer._id;
-        referrer.coins += 50; // Add 50 coins to referrer
-        await referrer.save();
-        await user.save();
-      }
-    }
-
-    // Generate session token
-    const sessionToken = uuidv4();
-    user.sessionToken = sessionToken;
-
-    // Encrypt session token
-    const encryptedSessionToken = encrypter(sessionToken);
-
-    // Save or update the user in the database
-    await User.findByIdAndUpdate(
-      user._id,
-      { sessionToken: encryptedSessionToken },
-      { new: true, upsert: true }
-    );
-
-    // Prepare user details for the response
-    const userDetails = {
-      id: user._id,
-      firstname: user.firstname,
-      lastname: user.lastname,
-      email: user.email,
-      userpic: user.userpic,
-      gender: user.gender,
-      status: user.status || "active",
-      sessionToken: encryptedSessionToken,
-    };
-
-    // Send response
-    res.status(isNewUser ? 201 : 200).json({
-      userdata: userDetails,
-      msg: isNewUser
-        ? "User signed up successfully"
-        : "User logged in successfully",
-    });
-  } catch (err) {
-    console.error("Error during Google authentication:", err);
-    res.status(500).json({ msg: "Internal server error" });
-  }
-});
-
-// Utility function to encrypt data
-function encrypter(data) {
-  const cryptoKey = process.env.CRYPTO_KEY;
-  return CryptoJS.AES.encrypt(data, cryptoKey).toString();
-}
+// Session verification route
+router.post("/verify-session", AuthController.verifySession);
 
 module.exports = router;
