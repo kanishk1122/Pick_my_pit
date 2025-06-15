@@ -16,8 +16,8 @@ const speciesRoutes = require("./src/routes/species.js");
 const adminRoutes = require("./src/routes/admin.js");
 
 //limit for image and data uplodation
-app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ limit: "2mb", extended: false }));
+app.use(express.json({ limit: "12mb" }));
+app.use(express.urlencoded({ limit: "12mb", extended: false }));
 
 // server.js or app.js
 require("dotenv").config();

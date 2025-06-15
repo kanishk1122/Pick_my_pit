@@ -2,56 +2,26 @@ const express = require("express");
 const router = express.Router();
 const User = require("../model/User");
 const Post = require("../model/Post");
-const Breed = require("../model/breed");
-const { normalizeAge, formatAge } = require("../utils/ageHelper");
-const {
-  post_validation,
-  post_update_validation,
-} = require("../helper/validation_schema.js");
+const { uploadImage } = require("../utils/cloudinaryConfig");
 require("dotenv").config();
 const { decrepter } = require("../helper/Functions.js");
-const Route = require("express/lib/router/route.js");
 const mongoose = require("mongoose");
 const { checkSessionId } = require("../helper/Functions.js");
-const { cloudinary, isConfigured } = require("../utils/cloudinaryConfig");
-const fs = require("fs").promises;
-const path = require("path");
 
-// Check Cloudinary configuration at startup
-if (!isConfigured) {
-  console.warn(
-    "⚠️ Cloudinary is not properly configured. Image uploads may fail."
-  );
-}
+// Add request logging middleware
+router.use((req, res, next) => {
+  const endpoint = req.originalUrl;
+  const userId = req.headers.userid || req.body.userId || "guest";
+  const method = req.method;
 
-// Add middleware to check session for all routes
-router.use(async (req, res, next) => {
-  try {
-    const userId = req.params.userId || req.body.userId;
-    if (userId) {
-      await checkSessionId(req, userId);
-    }
-    next();
-  } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: "Authentication failed",
-      error: error.message,
-    });
-  }
+  console.log(`${method} ${endpoint} | User: ${userId}`);
+  next();
 });
 
 // Create a new post
-router.post("/create", async (req, res) => {
+router.post("/create", express.json({ limit: "50mb" }), async (req, res) => {
   try {
-    const { error, value } = post_validation.validate(req.body);
-    if (error) {
-      return res.status(400).json({
-        success: false,
-        message: "Validation error",
-        error: error.details[0].message,
-      });
-    }
+    console.log("Processing create post request");
 
     const {
       title,
@@ -63,53 +33,77 @@ router.post("/create", async (req, res) => {
       userId,
       addressId,
       images,
-      age, // Age object containing value and unit
-    } = value;
+      age,
+    } = req.body;
 
-    console.log(`API requested: ${userId} ${addressId}`);
+    console.log(
+      `Creating post for user ID: ${userId}, Address ID: ${addressId}`
+    );
+    console.log(`Number of images: ${images ? images.length : 0}`);
 
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+
+    if (!addressId) {
+      return res.status(400).json({
+        success: false,
+        message: "Address ID is required",
+      });
+    }
+
+    // Validate required fields
+    if (!title || !species || !category) {
+      return res.status(400).json({
+        success: false,
+        message: "Title, species, and category/breed are required",
+      });
+    }
+
+    // Find the user
     const user = await User.findById(userId);
     if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     // Process and store images
     let imageUrls = [];
 
     if (images && images.length > 0) {
-      try {
-        // Check if Cloudinary is properly configured
-        if (isConfigured) {
-          console.log(`Uploading ${images.length} images to Cloudinary...`);
-          // Upload images to Cloudinary
-          const imageUploadPromises = images.map((image) =>
-            cloudinary.uploader.upload(image, {
-              folder: "pet_posts",
-              resource_type: "auto",
-            })
-          );
+      console.log(`Processing ${images.length} images...`);
 
-          const uploadedImages = await Promise.all(imageUploadPromises);
-          imageUrls = uploadedImages.map((image) => image.secure_url);
-          console.log("Images uploaded successfully to Cloudinary");
-        } else {
-          // Fallback: Use base64 images directly
-          console.warn("Cloudinary not configured. Using image data directly.");
-          imageUrls = images.slice(0, 5); // Limit to 5 images
+      try {
+        // Process images sequentially to avoid overwhelming Cloudinary
+        for (let i = 0; i < Math.min(images.length, 5); i++) {
+          const result = await uploadImage(images[i], {
+            folder: `pet_posts/${userId}`,
+            transformation: [{ width: 1200, height: 800, crop: "limit" }],
+          });
+
+          if (result && result.secure_url) {
+            imageUrls.push(result.secure_url);
+            console.log(
+              `✅ Image ${i + 1}/${images.length} uploaded successfully`
+            );
+          }
         }
+
+        console.log(
+          `Uploaded ${imageUrls.length}/${images.length} images successfully`
+        );
       } catch (uploadError) {
         console.error("Image upload error:", uploadError);
-
-        // Fallback: Still create the post without images
-        console.warn(
-          "Continuing post creation without images due to upload error"
-        );
-        imageUrls = [];
+        console.warn("Continuing post creation without images");
       }
     }
 
+    // Create the post data
     const postData = {
       owner: user._id,
       title,
@@ -124,16 +118,13 @@ router.post("/create", async (req, res) => {
 
     // Process and normalize the age if provided
     if (age && age.value) {
-      // Normalize the age to the most appropriate unit
-      try {
-        const normalizedAge = normalizeAge(age.value, age.unit);
-        postData.age = normalizedAge;
-      } catch (ageError) {
-        console.warn("Error normalizing age:", ageError);
-        postData.age = age; // Use original age value
-      }
+      postData.age = {
+        value: parseInt(age.value),
+        unit: age.unit || "months",
+      };
     }
 
+    // Create and save the post
     const post = new Post(postData);
     const savedPost = await post.save();
 
@@ -144,27 +135,16 @@ router.post("/create", async (req, res) => {
     user.posts.push(savedPost._id);
     await user.save();
 
-    // Get formatted age for response
-    let formattedAgeText = "";
-    if (savedPost.age && savedPost.age.value) {
-      try {
-        formattedAgeText = formatAge(savedPost.age);
-      } catch (formatError) {
-        formattedAgeText = `${savedPost.age.value} ${savedPost.age.unit}`;
-      }
-    }
+    console.log(`Post created successfully | Post ID: ${savedPost._id}`);
 
     res.status(201).json({
       success: true,
       message: "Post created successfully",
-      post: {
-        ...savedPost.toObject(),
-        formattedAge: formattedAgeText,
-      },
+      post: savedPost,
     });
   } catch (error) {
     console.error("Post creation error:", error);
-    res.status(500).json({
+    res.status(error.status || 500).json({
       success: false,
       message: "Unable to create post",
       error: error.message,
@@ -226,20 +206,32 @@ router.get("/filter", async (req, res) => {
       limit = 10,
     } = req.query;
 
-    page = parseInt(page);
-    limit = parseInt(limit);
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
     const skip = (page - 1) * limit;
 
     let query = {};
 
-    if (species) query.species = new RegExp("^" + species.trim() + "$", "i");
-    if (breed) query.category = new RegExp("^" + breed.trim() + "$", "i");
-    if (type) query.type = type;
+    if (species && species !== "undefined" && species !== "") {
+      query.species = new RegExp("^" + species.trim() + "$", "i");
+    }
 
-    if (type === "paid" && (minPrice || maxPrice)) {
+    if (breed && breed !== "undefined" && breed !== "") {
+      query.category = new RegExp("^" + breed.trim() + "$", "i");
+    }
+
+    if (type && type !== "undefined" && type !== "") {
+      query.type = type;
+    }
+
+    if (type === "paid" || (minPrice && maxPrice)) {
       query.amount = {};
-      if (minPrice) query.amount.$gte = parseFloat(minPrice);
-      if (maxPrice) query.amount.$lte = parseFloat(maxPrice);
+      if (minPrice && minPrice !== "undefined") {
+        query.amount.$gte = parseFloat(minPrice);
+      }
+      if (maxPrice && maxPrice !== "undefined") {
+        query.amount.$lte = parseFloat(maxPrice);
+      }
     }
 
     console.log("MongoDB query:", JSON.stringify(query, null, 2));

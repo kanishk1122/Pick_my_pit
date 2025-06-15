@@ -1,43 +1,52 @@
 const cloudinary = require("cloudinary").v2;
 require("dotenv").config();
 
-// Check if Cloudinary credentials are available
-const isCloudinaryConfigured = () => {
-  return (
-    process.env.CLOUDINARY_CLOUD_NAME &&
-    process.env.CLOUDINARY_API_KEY &&
-    process.env.CLOUDINARY_API_SECRET
-  );
-};
+// Cloudinary credentials - using values from frontend env
+const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME || "drqnhnref";
+const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY || "295777375369772";
+const CLOUDINARY_API_SECRET =
+  process.env.CLOUDINARY_API_SECRET || "yxIcb68RMTLXESOhiAOx5NJFVOQ";
 
-// Configure Cloudinary with environment variables
-const configureCloudinary = () => {
-  if (!isCloudinaryConfigured()) {
-    console.warn("⚠️ Cloudinary environment variables are not set properly.");
-    console.warn(
-      "Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET in your .env file"
-    );
-    return false;
-  }
+// Configure Cloudinary with the retrieved credentials
+cloudinary.config({
+  cloud_name: CLOUDINARY_CLOUD_NAME,
+  api_key: CLOUDINARY_API_KEY,
+  api_secret: CLOUDINARY_API_SECRET,
+  secure: true,
+});
 
+console.log(`Cloudinary configured with cloud name: ${CLOUDINARY_CLOUD_NAME}`);
+
+/**
+ * Uploads an image to Cloudinary with proper error handling
+ * @param {String} imageData - Base64 image data
+ * @param {Object} options - Upload options
+ * @returns {Promise<Object>} - Upload result or null if failed
+ */
+const uploadImage = async (imageData, options = {}) => {
   try {
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
+    console.log("Uploading image to Cloudinary...");
+
+    const defaultOptions = {
+      folder: "pet_posts",
+      resource_type: "auto",
+      timeout: 60000, // 60 seconds timeout
+    };
+
+    const result = await cloudinary.uploader.upload(imageData, {
+      ...defaultOptions,
+      ...options,
     });
-    return true;
+
+    console.log(`Image uploaded successfully. Public ID: ${result.public_id}`);
+    return result;
   } catch (error) {
-    console.error("Error configuring Cloudinary:", error);
-    return false;
+    console.error("Error uploading image to Cloudinary:", error);
+    return null;
   }
 };
-
-// Initialize configuration
-const isConfigured = configureCloudinary();
 
 module.exports = {
   cloudinary,
-  isCloudinaryConfigured,
-  isConfigured,
+  uploadImage,
 };

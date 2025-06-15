@@ -42,6 +42,8 @@ const CreatePost = () => {
   const [showNewAddressForm, setShowNewAddressForm] = useState(false);
   const [speciesHierarchy, setSpeciesHierarchy] = useState([]);
   const [availableBreeds, setAvailableBreeds] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   useEffect(() => {
     fetchSpeciesHierarchy();
@@ -162,6 +164,46 @@ const CreatePost = () => {
     }
   };
 
+  // Add a new function to compress images before upload
+  const compressImage = (imageDataUrl) => {
+    return new Promise((resolve) => {
+      const maxWidth = 1200; // Maximum width for the compressed image
+      const maxHeight = 1200; // Maximum height for the compressed image
+      const quality = 0.7; // Image quality (0.7 = 70% quality)
+
+      const img = new Image();
+      img.onload = function () {
+        // Calculate new dimensions
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        if (height > maxHeight) {
+          width = Math.round((width * maxHeight) / height);
+          height = maxHeight;
+        }
+
+        // Create a canvas to compress the image
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Get the compressed image as a data URL
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(compressedDataUrl);
+      };
+
+      img.src = imageDataUrl;
+    });
+  };
+
   const handleImageUpload = (event) => {
     const files = Array.from(event.target.files);
     if (files.length + selectedImages.length > 5) {
@@ -169,10 +211,47 @@ const CreatePost = () => {
       return;
     }
 
+    // Show loading state
+    if (files.length > 0) {
+      setUploadProgress(10);
+      setIsSubmitting(true);
+    }
+
+    let processed = 0;
+
     files.forEach((file) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedImages((prevImages) => [...prevImages, reader.result]);
+      reader.onloadend = async () => {
+        try {
+          // Compress the image before adding it to state
+          const compressedImage = await compressImage(reader.result);
+          setSelectedImages((prevImages) => [...prevImages, compressedImage]);
+
+          // Update progress
+          processed++;
+          setUploadProgress(Math.round((processed / files.length) * 90) + 10);
+
+          // Reset loading state when all files are processed
+          if (processed === files.length) {
+            setTimeout(() => {
+              setIsSubmitting(false);
+              setUploadProgress(0);
+            }, 500);
+          }
+        } catch (error) {
+          console.error("Error compressing image:", error);
+          Swal.fire({
+            icon: "error",
+            title: "Oops...",
+            text: "There was an error processing your image. Please try another image.",
+          });
+
+          processed++;
+          if (processed === files.length) {
+            setIsSubmitting(false);
+            setUploadProgress(0);
+          }
+        }
       };
       reader.readAsDataURL(file);
     });
@@ -217,7 +296,11 @@ const CreatePost = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting) return; // Prevent multiple submissions
+
     try {
+      // Validate form inputs
       if (!formData.species) {
         throw new Error("Please select a species");
       }
@@ -245,6 +328,28 @@ const CreatePost = () => {
         throw new Error("Age must be a positive number");
       }
 
+      // Start loading state
+      setIsSubmitting(true);
+      setUploadProgress(10); // Initial progress indication
+
+      // Prepare chunked upload for multiple images
+      let compressedImages = [];
+      for (let i = 0; i < selectedImages.length; i++) {
+        // Update progress during compression
+        setUploadProgress(10 + Math.round((i / selectedImages.length) * 20));
+
+        // Further compress if needed before sending to server
+        if (selectedImages[i].length > 1000000) {
+          // If larger than ~1MB
+          const recompressed = await compressImage(selectedImages[i]);
+          compressedImages.push(recompressed);
+        } else {
+          compressedImages.push(selectedImages[i]);
+        }
+      }
+
+      setUploadProgress(30); // Compression completed
+
       const postData = {
         title: formData.petName,
         discription: formData.description,
@@ -254,7 +359,7 @@ const CreatePost = () => {
         species: formData.species,
         userId: user.id,
         addressId: selectedAddress._id,
-        images: selectedImages,
+        images: compressedImages,
         age: formData.ageValue
           ? {
               value: Number(formData.ageValue),
@@ -263,23 +368,40 @@ const CreatePost = () => {
           : undefined,
       };
 
-      console.log("Submitting post data:", postData);
+      console.log(`Submitting post with ${compressedImages.length} images`);
+      setUploadProgress(40); // Update progress after preparing data
 
+      // Simulate progress for image uploads
+      let progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          const newProgress = prev + 2;
+          return newProgress < 80 ? newProgress : 80;
+        });
+      }, 1000);
+
+      // Make the API call
       const response = await axios.post(POST.Create, postData, {
         headers: {
           Authorization: `Bearer ${user.sessionToken}`,
           "Content-Type": "application/json",
           userid: user.id,
         },
+        // Add timeout for large uploads
+        timeout: 60000, // 60 seconds
       });
 
+      // Clear the interval
+      clearInterval(progressInterval);
+      setUploadProgress(100); // Complete progress
+
       if (response.data.success) {
+        // Show success message
         Swal.fire({
           icon: "success",
           title: "Success!",
           text: "Your pet listing has been created successfully.",
         });
-        // Reset form or redirect to the new post
+        // Reset form
         setFormData({
           petName: "",
           species: "",
@@ -306,14 +428,27 @@ const CreatePost = () => {
       }
     } catch (error) {
       console.error("Error creating post:", error);
+      let errorMessage = "Failed to create pet listing";
+
+      if (error.message === "Network Error" || error.code === "ECONNABORTED") {
+        errorMessage =
+          "The upload timed out. Please try with smaller or fewer images.";
+      } else if (error.response?.status === 413) {
+        errorMessage =
+          "The images are too large. Please use smaller images or fewer images.";
+      } else {
+        errorMessage =
+          error.response?.data?.message || error.message || errorMessage;
+      }
+
       Swal.fire({
         icon: "error",
         title: "Oops...",
-        text:
-          error.response?.data?.message ||
-          error.message ||
-          "Failed to create pet listing",
+        text: errorMessage,
       });
+    } finally {
+      setIsSubmitting(false);
+      setUploadProgress(0);
     }
   };
 
@@ -424,6 +559,41 @@ const CreatePost = () => {
     </div>
   );
 
+  // Add loading overlay
+  const renderLoadingOverlay = () => {
+    if (!isSubmitting) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col items-center justify-center">
+        <div className="bg-white p-6 rounded-lg shadow-xl w-80 text-center">
+          <div className="mb-4">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+              className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full mx-auto"
+            />
+          </div>
+          <h3 className="text-xl font-semibold mb-2 text-gray-800">
+            Creating Post
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Please wait while we upload your images and create your listing...
+          </p>
+
+          <div className="w-full bg-gray-200 rounded-full h-2.5">
+            <div
+              className="bg-green-500 h-2.5 rounded-full transition-all duration-300"
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+          <p className="text-sm text-gray-500 mt-2">
+            {uploadProgress}% complete
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -431,6 +601,9 @@ const CreatePost = () => {
       transition={{ duration: 0.5 }}
       className="min-h-screen pt-24 px-4 mb-10 bg-gradient-to-br from-green-50 to-emerald-100 border-t-2 border-black rounded-t-2xl"
     >
+      {/* Add loading overlay */}
+      {renderLoadingOverlay()}
+
       <div className="w-full bg-white rounded-t-3xl shadow-xl shadow-b-none p-8">
         <h1 className="text-4xl font-bold text-center bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent mb-8">
           Create New Pet Listing
@@ -641,11 +814,40 @@ const CreatePost = () => {
           <div className="flex justify-end">
             <motion.button
               type="submit"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="brand-button px-3 bg-green-500 "
+              whileHover={{ scale: isSubmitting ? 1 : 1.05 }}
+              whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
+              disabled={isSubmitting}
+              className={`brand-button px-3 bg-green-500 flex items-center gap-2 ${
+                isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+              }`}
             >
-              Create Listing
+              {isSubmitting ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Creating...
+                </>
+              ) : (
+                "Create Listing"
+              )}
             </motion.button>
           </div>
         </form>
