@@ -38,4 +38,6 @@ export const POST = {
   GetSpecies: `${baseurl}species`,
   GetBreeds: `${baseurl}breeds`,
   SpeciesHierarchy: `${baseurl}species/hierarchy`,
+  GetPostById: `${baseurl}post`,
+  GetPostBySlug: (slug) => `${baseurl}post/slug/${slug}`,
 };

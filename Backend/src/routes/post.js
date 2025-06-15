@@ -14,6 +14,9 @@ router.use((req, res, next) => {
 
 // NOTE: Order of routes is important - more specific routes first
 
+// Specific slug route (will be matched before the catch-all idOrSlug route)
+router.get("/slug/:slug", postController.getPostBySlug);
+
 // Create a new post
 router.post(
   "/create",

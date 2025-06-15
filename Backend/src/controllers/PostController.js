@@ -384,6 +384,42 @@ exports.getBreedsBySpecies = async (req, res) => {
 };
 
 /**
+ * Get post by slug
+ */
+exports.getPostBySlug = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    console.log(`Looking up post by slug: ${slug}`);
+
+    const post = await Post.findOne({ slug })
+      .populate("owner", "firstname lastname userpic")
+      .populate("address");
+
+    if (!post) {
+      return res.status(404).json({
+        success: false,
+        message: "Post not found with this slug",
+      });
+    }
+
+    console.log(`Post found: ${post._id}, ${post.title}`);
+
+    res.status(200).json({
+      success: true,
+      post,
+    });
+  } catch (error) {
+    console.error("Error fetching post by slug:", error);
+    res.status(500).json({
+      success: false,
+      message: "Unable to fetch post",
+      error: error.message,
+    });
+  }
+};
+
+/**
  * Get post by ID or slug
  */
 exports.getPostByIdOrSlug = async (req, res) => {
@@ -391,12 +427,15 @@ exports.getPostByIdOrSlug = async (req, res) => {
     const { idOrSlug } = req.params;
     let post;
 
-    // First try to find by slug
+    // First try to find by ID if it looks like a valid MongoDB ObjectId
     if (mongoose.Types.ObjectId.isValid(idOrSlug)) {
       post = await Post.findById(idOrSlug)
         .populate("owner", "firstname lastname userpic")
         .populate("address");
-    } else {
+    }
+
+    // If not found by ID, try by slug
+    if (!post) {
       post = await Post.findOne({ slug: idOrSlug })
         .populate("owner", "firstname lastname userpic")
         .populate("address");
@@ -412,6 +451,7 @@ exports.getPostByIdOrSlug = async (req, res) => {
     res.status(200).json({
       success: true,
       post,
+      canonicalSlug: post.slug, // Include the canonical slug in the response
     });
   } catch (error) {
     console.error("Error fetching post:", error);

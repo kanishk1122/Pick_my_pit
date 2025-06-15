@@ -3,7 +3,6 @@ const mongoose = require("mongoose");
 // Helper function to generate slug
 function slugify(text) {
   if (!text) return "";
-
   return text
     .toString()
     .toLowerCase()
@@ -92,8 +91,8 @@ PostSchema.pre("save", function (next) {
     const baseSlug = slugify(this.title || "pet-post");
 
     // Add a unique timestamp to avoid collisions
-    const timestamp = new Date().getTime().toString().slice(-6);
-    this.slug = `${baseSlug}-${timestamp}`;
+    const uniqueId = new Date().getTime().toString().slice(-6);
+    this.slug = `${baseSlug}-${uniqueId}`;
   }
 
   // Generate species slug if missing
@@ -142,4 +141,5 @@ PostSchema.statics.formatAge = function (age) {
 
 const Post = mongoose.model("Post", PostSchema);
 
+module.exports = Post;
 module.exports = Post;
