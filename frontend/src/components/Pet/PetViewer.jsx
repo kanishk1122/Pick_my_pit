@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import  { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import { POST } from "../../Consts/apikeys";
@@ -44,20 +44,20 @@ const PetViewer = () => {
     setIsChatOpen(true);
   };
 
-  const handleSendMessage = async (message) => {
-    try {
-      // Implement the API call to send a message
-      // await axios.post('/api/messages', { recipientId: pet.owner._id, message });
-      console.log("Message sent:", message);
-      // You might want to update the UI to show the sent message
-    } catch (error) {
-      console.error("Error sending message:", error);
-    }
-  };
+  // const handleSendMessage = async (message) => {
+  //   try {
+  //     // Implement the API call to send a message
+  //     // await axios.post('/api/messages', { recipientId: pet.owner._id, message });
+  //     console.log("Message sent:", message);
+  //     // You might want to update the UI to show the sent message
+  //   } catch (error) {
+  //     console.error("Error sending message:", error);
+  //   }
+  // };
 
   return (
     <ChatProvider>
-      <div className="container mx-auto p-4">
+      <div className="w-full p-4">
         {loading ? (
           <div className="h-screen flex items-center justify-center">
             <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-green-500"></div>

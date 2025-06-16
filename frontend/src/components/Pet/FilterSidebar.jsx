@@ -1,17 +1,17 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import axios from 'axios';
-import { POST } from '../../Consts/apikeys';
-import '../../styles/rangeSlider.css';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import axios from "axios";
+import { POST } from "../../Consts/apikeys";
+import "../../styles/rangeSlider.css";
 
 const FilterSidebar = ({ onFilterChange, initialFilters }) => {
   const [filters, setFilters] = useState({
-    species: '',
-    breed: '', // This will use the category field from backend
-    type: '',
-    minPrice: '0',
-    maxPrice: '100000',
-    ...initialFilters
+    species: "",
+    breed: "", // This will use the category field from backend
+    type: "",
+    minPrice: "0",
+    maxPrice: "100000",
+    ...initialFilters,
   });
 
   const [breeds, setBreeds] = useState([]);
@@ -29,10 +29,11 @@ const FilterSidebar = ({ onFilterChange, initialFilters }) => {
         setIsLoadingBreeds(true);
         const response = await axios.get(`${POST.Breeds}/${filters.species}`);
         if (response.data.success) {
+          console.log("Breeds data:", response.data.breeds);
           setBreeds(response.data.breeds);
         }
       } catch (error) {
-        console.error('Error fetching breeds:', error);
+        console.error("Error fetching breeds:", error);
       } finally {
         setIsLoadingBreeds(false);
       }
@@ -43,58 +44,59 @@ const FilterSidebar = ({ onFilterChange, initialFilters }) => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       [name]: value,
-      ...(name === 'species' && { breed: '' }), // Reset breed when species changes
-      ...(name === 'type' && value !== 'paid' && { minPrice: '0', maxPrice: '100000' }) // Reset price range when switching to free
+      ...(name === "species" && { breed: "" }), // Reset breed when species changes
+      ...(name === "type" &&
+        value !== "paid" && { minPrice: "0", maxPrice: "100000" }), // Reset price range when switching to free
     }));
   };
 
-  const handlePriceChange = useCallback((e) => {
-    const { name, value } = e.target;
-    setFilters(prev => {
-      const newFilters = {
-        ...prev,
-        [name]: value
-      };
-      
-      // Ensure minPrice doesn't exceed maxPrice
-      if (name === 'minPrice' && parseInt(value) > parseInt(prev.maxPrice)) {
-        newFilters.maxPrice = value;
-      }
-      
-      // Ensure maxPrice doesn't go below minPrice
-      if (name === 'maxPrice' && parseInt(value) < parseInt(prev.minPrice)) {
-        newFilters.minPrice = value;
-      }
-      
-      return newFilters;
-    });
-  }, []);
+  // const handlePriceChange = useCallback((e) => {
+  //   const { name, value } = e.target;
+  //   setFilters(prev => {
+  //     const newFilters = {
+  //       ...prev,
+  //       [name]: value
+  //     };
+
+  //     // Ensure minPrice doesn't exceed maxPrice
+  //     if (name === 'minPrice' && parseInt(value) > parseInt(prev.maxPrice)) {
+  //       newFilters.maxPrice = value;
+  //     }
+
+  //     // Ensure maxPrice doesn't go below minPrice
+  //     if (name === 'maxPrice' && parseInt(value) < parseInt(prev.minPrice)) {
+  //       newFilters.minPrice = value;
+  //     }
+
+  //     return newFilters;
+  //   });
+  // }, []);
 
   const formatPrice = (value) => {
-    return `₹${parseInt(value).toLocaleString('en-IN')}`;
+    return `₹${parseInt(value).toLocaleString("en-IN")}`;
   };
 
   const handleRangeChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prev => {
+    setFilters((prev) => {
       const newFilters = {
         ...prev,
-        [name]: value
+        [name]: value,
       };
-      
+
       // Ensure minPrice doesn't exceed maxPrice
-      if (name === 'minPrice' && parseInt(value) > parseInt(prev.maxPrice)) {
+      if (name === "minPrice" && parseInt(value) > parseInt(prev.maxPrice)) {
         newFilters.maxPrice = value;
       }
-      
+
       // Ensure maxPrice doesn't go below minPrice
-      if (name === 'maxPrice' && parseInt(value) < parseInt(prev.minPrice)) {
+      if (name === "maxPrice" && parseInt(value) < parseInt(prev.minPrice)) {
         newFilters.minPrice = value;
       }
-      
+
       return newFilters;
     });
   };
@@ -111,13 +113,46 @@ const FilterSidebar = ({ onFilterChange, initialFilters }) => {
     onFilterChange(debouncedFilters);
   }, [debouncedFilters, onFilterChange]);
 
+  // Helper function to extract breed name and capitalize it
+  const getBreedDisplayName = (breed) => {
+    if (typeof breed === "string") {
+      return breed.charAt(0).toUpperCase() + breed.slice(1);
+    }
+
+    if (typeof breed === "object" && breed !== null) {
+      // Handle different possible breed object structures
+      const name = breed.name || breed.displayName || breed;
+
+      if (typeof name === "string") {
+        return name.charAt(0).toUpperCase() + name.slice(1);
+      }
+    }
+
+    return "Unknown Breed";
+  };
+
+  // Helper function to get breed value for option
+  const getBreedValue = (breed) => {
+    if (typeof breed === "string") {
+      return breed;
+    }
+
+    if (typeof breed === "object" && breed !== null) {
+      return breed.name || breed.slug || breed.displayName || breed;
+    }
+
+    return "";
+  };
+
   return (
     <motion.div
       initial={{ x: -300 }}
       animate={{ x: 0 }}
       className="w-[260px] h-full pt-10 min-h-screen bg-white"
     >
-      <h2 className="text-2xl font-bold mb-6 text-green-600 text-center">Filter Pets</h2>
+      <h2 className="text-2xl font-bold mb-6 text-green-600 text-center">
+        Filter Pets
+      </h2>
       <ul className="w-full justify-center items-center flex flex-col gap-4 mt-2 px-3">
         {/* Species Selection */}
         <li className="w-full">
@@ -141,7 +176,7 @@ const FilterSidebar = ({ onFilterChange, initialFilters }) => {
           <li className="w-full">
             <label className="block text-sm font-medium mb-1">Breed</label>
             <select
-              name="breed" // This will map to category in the backend
+              name="breed"
               value={filters.breed}
               onChange={handleInputChange}
               disabled={isLoadingBreeds}
@@ -151,9 +186,9 @@ const FilterSidebar = ({ onFilterChange, initialFilters }) => {
               {isLoadingBreeds ? (
                 <option disabled>Loading breeds...</option>
               ) : (
-                breeds.map(breed => (
-                  <option key={breed} value={breed}>
-                    {breed.charAt(0).toUpperCase() + breed.slice(1)}
+                breeds.map((breed, index) => (
+                  <option key={index} value={getBreedValue(breed)}>
+                    {getBreedDisplayName(breed)}
                   </option>
                 ))
               )}
@@ -176,11 +211,12 @@ const FilterSidebar = ({ onFilterChange, initialFilters }) => {
           </select>
         </li>
 
-    
         {/* Show price range only if type is 'paid' */}
-        {filters.type !== 'free' && (
+        {filters.type !== "free" && (
           <li className="w-full">
-            <label className="block text-sm font-medium mb-1">Price Range</label>
+            <label className="block text-sm font-medium mb-1">
+              Price Range
+            </label>
             <div className="px-2">
               <div className="flex justify-between mb-2">
                 <span>{formatPrice(filters.minPrice)}</span>
@@ -191,7 +227,7 @@ const FilterSidebar = ({ onFilterChange, initialFilters }) => {
                   className="absolute h-full bg-green-500 rounded-full"
                   style={{
                     left: `${(filters.minPrice / 100000) * 100}%`,
-                    right: `${100 - (filters.maxPrice / 100000) * 100}%`
+                    right: `${100 - (filters.maxPrice / 100000) * 100}%`,
                   }}
                 />
               </div>
