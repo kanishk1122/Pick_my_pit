@@ -3,9 +3,10 @@ import { SpeciesController } from "../controllers/species.controller.js";
 
 const router = Router();
 
-// Public routes
+// Public routes - specific routes must come before parameterized routes
 router.get("/", SpeciesController.getAllSpecies);
 router.get("/active", SpeciesController.getActiveSpecies);
+router.get("/hierarchy", SpeciesController.getSpeciesHierarchy);
 router.get("/name/:name", SpeciesController.getSpeciesByName);
 router.get("/:id", SpeciesController.getSpeciesById);
 

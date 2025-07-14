@@ -3,6 +3,9 @@ import { PostController } from "../controllers/post.controller.js";
 
 const router = Router();
 
+// Filter route - must come before /:id route
+router.get("/filter", PostController.filterPosts);
+
 // Public routes
 router.get("/", PostController.getAllPosts);
 router.get("/slug/:slug", PostController.getPostBySlug);

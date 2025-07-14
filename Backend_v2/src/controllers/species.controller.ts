@@ -199,4 +199,37 @@ export class SpeciesController {
       res.status(500).json(ResponseHelper.error("Internal server error"));
     }
   }
+
+  // Get species hierarchy with breeds
+  static async getSpeciesHierarchy(req: Request, res: Response): Promise<void> {
+    try {
+      const species = await SpeciesModel.find({ active: true }).sort({
+        popularity: -1,
+        displayName: 1,
+      });
+
+      // If you have a breed model, you can populate it here
+      // const speciesWithBreeds = await Promise.all(
+      //   species.map(async (s) => {
+      //     const breeds = await BreedModel.find({ species: s._id, active: true });
+      //     return {
+      //       ...s.toObject(),
+      //       breeds
+      //     };
+      //   })
+      // );
+
+      res
+        .status(200)
+        .json(
+          ResponseHelper.success(
+            species,
+            "Species hierarchy retrieved successfully"
+          )
+        );
+    } catch (error) {
+      console.error("Get species hierarchy error:", error);
+      res.status(500).json(ResponseHelper.error("Internal server error"));
+    }
+  }
 }

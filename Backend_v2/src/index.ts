@@ -98,6 +98,6 @@ app.use(
 // Start server
 server.listen(config.port, () => {
   console.log(`🚀 Server is running on port ${config.port}`);
-  console.log(`📊 Admin UI available at http://localhost:${config.port}/admin`);
+  // console.log(`📊 Admin UI available at http://localhost:${config.port}/admin`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
 });
