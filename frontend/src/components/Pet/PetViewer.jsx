@@ -1,27 +1,28 @@
-import  { useState, useEffect } from "react";
-import axios from "axios";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { POST } from "../../Consts/apikeys";
 import { useUser } from "../../utils/Usercontext";
 import { ChatProvider } from "../../context/ChatContext";
 import ChatModal from "../Chat/ChatModal";
 import { Carousel } from "react-responsive-carousel";
+import apiService from "../../utils/apiService";
 import "react-responsive-carousel/lib/styles/carousel.min.css";
-import "./PetViewer.css"; // This import should now work
+import "./PetViewer.css";
 
 const PetViewer = () => {
   const [pet, setPet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const { id } = useParams(); // This could be either an ID or slug
+  const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useUser();
 
   useEffect(() => {
     const fetchPet = async () => {
       try {
-        // Try using the idOrSlug endpoint
-        const response = await axios.get(`${POST.GetPostById}/${id}`);
+        // Use apiService instead of axios directly
+        const response = await apiService.get(`${POST.GetPostById}/${id}`);
+
         setPet(response.data.post);
 
         // If we have a canonical slug and it's not the same as the URL parameter,

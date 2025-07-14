@@ -390,6 +390,8 @@ exports.getPostBySlug = async (req, res) => {
   try {
     const { slug } = req.params;
 
+    console.log(`Received request from user ID: ${req.userId || "unknown"}`);
+
     console.log(`Looking up post by slug: ${slug}`);
 
     const post = await Post.findOne({ slug })
@@ -426,6 +428,8 @@ exports.getPostByIdOrSlug = async (req, res) => {
   try {
     const { idOrSlug } = req.params;
     let post;
+
+    console.log(`Received request from user ID: ${req.userId || "unknown"}`);
 
     // First try to find by ID if it looks like a valid MongoDB ObjectId
     if (mongoose.Types.ObjectId.isValid(idOrSlug)) {

@@ -105,6 +105,12 @@ const validateAdminExists = async (req, res, next) => {
   }
 };
 
+
+const userIdFromRequest = (req) => {
+
+};
+
+
 module.exports = {
   verifyAdminToken,
   validateAdminExists,
