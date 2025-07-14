@@ -88,20 +88,21 @@ export class PostController {
         .limit(limit)
         .sort({ createdAt: -1 });
 
-
-        console.log("[post controller] post :", posts); // Debug log
+      console.log("[post controller] post :", posts); // Debug log
 
       const total = await PostModel.countDocuments(filter);
 
-      res.status(200).json(
-        ResponseHelper.paginated(
-          posts,
-          total,
-          page,
-          limit,
-          "Posts retrieved successfully"
-        )
-      );
+      res
+        .status(200)
+        .json(
+          ResponseHelper.paginated(
+            posts,
+            total,
+            page,
+            limit,
+            "Posts retrieved successfully"
+          )
+        );
     } catch (error) {
       console.error("Get posts error:", error);
       res.status(500).json(ResponseHelper.error("Internal server error"));
@@ -295,7 +296,12 @@ export class PostController {
       const limit = parseInt(req.query.limit as string) || 10;
       const skip = (page - 1) * limit;
 
-      const filter: any = { status: "available" }; // Default to available posts
+      const filter: any = {}; // Remove default status filter
+
+      // Filter by status only if explicitly provided
+      if (req.query.status && req.query.status !== "") {
+        filter.status = req.query.status;
+      }
 
       // Filter by species
       if (req.query.species && req.query.species !== "") {
@@ -316,7 +322,10 @@ export class PostController {
       const minPrice = parseFloat(req.query.minPrice as string) || 0;
       const maxPrice = parseFloat(req.query.maxPrice as string) || 100000;
 
-      if (req.query.type !== "free") {
+      if (
+        req.query.type !== "free" &&
+        (req.query.minPrice || req.query.maxPrice)
+      ) {
         filter.amount = {
           $gte: minPrice,
           $lte: maxPrice,
@@ -349,7 +358,7 @@ export class PostController {
           page,
           limit,
           "Filtered posts retrieved successfully",
-        
+     
         )
       );
     } catch (error) {
@@ -358,4 +367,3 @@ export class PostController {
     }
   }
 }
-
